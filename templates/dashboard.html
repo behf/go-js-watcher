@@ -36,6 +36,7 @@
                 <tr>
                     <th>URL</th>
                     <th>Check Interval (s)</th>
+                    <th>Last Checked</th> <!-- NEW COLUMN HEADER -->
                     <th>Recent Changes (Last 5)</th>
                     <th>Actions</th>
                 </tr>
@@ -46,11 +47,11 @@
                 <tr>
                     <td>{{ .URL }}</td>
                     <td>{{ .IntervalSeconds }}</td>
+                    <td>{{ humanReadableTime .LastChecked }}</td> <!-- NEW COLUMN DATA -->
                     <td>
                         <ul style="padding-left: 15px; margin: 0;">
                             {{ if .Changes }}
                             {{ range .Changes }}
-                            <!-- Apply class based on IsRead status -->
                             <li class="{{ if .IsRead }}change-read{{ else }}change-unread{{ end }}">
                                 <a href="/diff/{{ .ID }}">
                                     {{ .DetectedAt.Format "2006-01-02 15:04" }}
@@ -74,7 +75,7 @@
                 {{ end }}
                 {{ else }}
                 <tr>
-                    <td colspan="4" style="text-align: center;">No URLs are being watched.</td>
+                    <td colspan="5" style="text-align: center;">No URLs are being watched.</td> <!-- Updated colspan -->
                 </tr>
                 {{ end }}
             </tbody>
