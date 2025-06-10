@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS Watcher Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>JS Watcher Dashboard</h1>
+            <a href="/logout">Logout</a>
+        </div>
+
+        {{ if .Flashes }}
+        <ul class="flashes">
+            {{ range .Flashes }}
+            <li>{{ . }}</li>
+            {{ end }}
+        </ul>
+        {{ end }}
+
+        <h2>Add New URL to Watch</h2>
+        <form action="/add_url" method="post">
+            <input type="url" name="url" placeholder="https://example.com/script.js" required size="50">
+            <input type="number" name="interval" value="300" required>
+            <button type="submit">Add URL</button>
+        </form>
+
+        <h2>Watched URLs</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>URL</th>
+                    <th>Check Interval (s)</th>
+                    <th>Recent Changes (Last 5)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ if .WatchedUrls }}
+                {{ range .WatchedUrls }}
+                <tr>
+                    <td>{{ .URL }}</td>
+                    <td>{{ .IntervalSeconds }}</td>
+                    <td>
+                        <ul style="padding-left: 15px; margin: 0;">
+                            {{ if .Changes }}
+                            {{ range .Changes }}
+                            <li>
+                                <a href="/diff/{{ .ID }}">
+                                    {{ .DetectedAt.Format "2006-01-02 15:04" }}
+                                </a>
+                            </li>
+                            {{ else }}
+                            <li><i>No recent changes. Status: {{ .Status }}</i></li>
+                            {{ end }}
+                            {{ else }}
+                            <li><i>{{ .Status }}</i></li>
+                            {{ end }}
+                        </ul>
+                    </td>
+                    <td>
+                        <form action="/remove_url" method="post">
+                            <input type="hidden" name="id" value="{{ .ID }}">
+                            <button type="submit">Remove</button>
+                        </form>
+                    </td>
+                </tr>
+                {{ end }}
+                {{ else }}
+                <tr>
+                    <td colspan="4" style="text-align: center;">No URLs are being watched.</td>
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+
+    </div>
+</body>
+
+</html>

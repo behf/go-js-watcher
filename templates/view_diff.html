@@ -1,0 +1,24 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diff View</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <!-- Use WatchedURL.URL directly from the context -->
+            <h1>Diff for {{ .WatchedURL.URL }}</h1>
+            <p><a href="/dashboard">Back to Dashboard</a></p>
+        </header>
+        <p>Change detected at: {{ .ChangeEvent.DetectedAt.Format "2006-01-02 15:04:05" }}</p>
+        <div class="diff-container">
+            <!-- Use the pre-marked safe HTML content -->
+            <pre id="diff-output">{{ .DiffContent }}</pre>
+        </div>
+    </div>
+</body>
+</html>
