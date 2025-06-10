@@ -22,5 +22,6 @@ type ChangeEvent struct {
 	gorm.Model           // Provides ID, CreatedAt, UpdatedAt, DeletedAt
 	DiffText   string    `gorm:"not null"`
 	DetectedAt time.Time `gorm:"not null"`
-	URLID      uint      `gorm:"not null"` // Foreign key to WatchedUrl
+	URLID      uint      `gorm:"not null"`      // Foreign key to WatchedUrl
+	IsRead     bool      `gorm:"default:false"` // NEW FIELD: Tracks if the change has been "read"
 }

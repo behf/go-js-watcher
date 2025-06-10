@@ -50,7 +50,8 @@
                         <ul style="padding-left: 15px; margin: 0;">
                             {{ if .Changes }}
                             {{ range .Changes }}
-                            <li>
+                            <!-- Apply class based on IsRead status -->
+                            <li class="{{ if .IsRead }}change-read{{ else }}change-unread{{ end }}">
                                 <a href="/diff/{{ .ID }}">
                                     {{ .DetectedAt.Format "2006-01-02 15:04" }}
                                 </a>

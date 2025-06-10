@@ -3,6 +3,7 @@ package handlers
 import (
 	"html/template" // For HTML templating
 	"io"
+	"log"
 	"net/http" // Standard HTTP package
 	"strconv"  // For string to integer conversion
 
@@ -119,9 +120,9 @@ func Logout(c echo.Context) error {
 // Dashboard renders the main dashboard page.
 func Dashboard(c echo.Context) error {
 	var urls []models.WatchedUrl
-	// Preload Changes for each URL, ordered by DetectedAt descending, limit 5
 	result := database.DB.Preload("Changes", func(db *gorm.DB) *gorm.DB {
-		return db.Order("detected_at DESC").Limit(5) // Limit to 5 most recent changes
+		// Ordering by DetectedAt DESC and ID DESC ensures stable ordering for "last 5"
+		return db.Order("detected_at DESC, id DESC").Limit(5)
 	}).Find(&urls)
 
 	if result.Error != nil {
@@ -134,13 +135,10 @@ func Dashboard(c echo.Context) error {
 
 	// Convert times to local timezone for display
 	for i := range urls {
-		// Convert LastChecked if it exists
 		if urls[i].LastChecked != nil {
 			localTime := urls[i].LastChecked.Local()
-			urls[i].LastChecked = &localTime // Update the pointer with the local time
+			urls[i].LastChecked = &localTime
 		}
-
-		// Convert DetectedAt for each change event
 		for j := range urls[i].Changes {
 			urls[i].Changes[j].DetectedAt = urls[i].Changes[j].DetectedAt.Local()
 		}
@@ -249,6 +247,15 @@ func ViewDiff(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Database error retrieving change event: "+result.Error.Error())
 	}
 
+	// Mark the change event as read
+	if !changeEvent.IsRead {
+		changeEvent.IsRead = true
+		if result := database.DB.Save(&changeEvent); result.Error != nil {
+			// Log the error but don't prevent showing the diff
+			log.Printf("Error marking change event %d as read: %v", changeEvent.ID, result.Error)
+		}
+	}
+
 	var watchedURL models.WatchedUrl
 	if result := database.DB.First(&watchedURL, changeEvent.URLID); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -257,7 +264,6 @@ func ViewDiff(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Database error retrieving associated URL: "+result.Error.Error())
 	}
 
-	// Convert DetectedAt to local timezone for display in ViewDiff
 	changeEvent.DetectedAt = changeEvent.DetectedAt.Local()
 
 	return c.Render(http.StatusOK, "view_diff.html", echo.Map{

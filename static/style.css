@@ -324,3 +324,22 @@ td button:hover {
 .watched-urls-table td button:hover {
     background-color: #c0392b;
 }
+
+.change-unread {
+    font-weight: bold;
+    color: #0056b3; /* A distinct color for unread, e.g., a darker blue */
+}
+
+.change-read {
+    font-weight: normal;
+    color: #6c757d; /* A muted color for read, e.g., gray */
+}
+
+.change-unread a {
+    color: #0056b3; /* Ensure link color matches */
+}
+
+.change-read a {
+    color: #6c757d; /* Ensure link color matches */
+}
+
