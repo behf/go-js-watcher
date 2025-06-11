@@ -36,7 +36,7 @@ func sendTelegramNotification(botToken, chatID, url, diffLink string) {
 
 	messageText := fmt.Sprintf("<b>Change detected in:</b> %s\n\n", html.EscapeString(url))
 	if diffLink != "" {
-		messageText += fmt.Sprintf("<a href=\"%s\">View details on the dashboard.</a>", html.EscapeString(diffLink))
+		messageText += fmt.Sprintf("View details on the dashboard:\n\n%s", html.EscapeString(diffLink))
 	} else {
 		messageText += "View details on the dashboard."
 	}
