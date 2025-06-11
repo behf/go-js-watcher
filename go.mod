@@ -1,6 +1,6 @@
 module go-js-watcher
 
-go 1.23.3
+go 1.23.0
 
 // The replace directives below are often not needed for fresh projects,
 // but can be used to point to local versions or specific forks.
