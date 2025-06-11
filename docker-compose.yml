@@ -1,27 +1,21 @@
-version: '1.0'
+version: '3.8'
 
 services:
   app:
     build: .
     container_name: go-js-watcher-app
     ports:
-      - "8090:8090"      # In the port mapping, the format is `"HOST_PORT:CONTAINER_PORT"`
+      - "8090:8090"
     volumes:
-      - watcher_data:/app/data  # Mount a named volume for database persistence
+      - watcher_data:/app/data
+    env_file:
+      - .env
     environment:
-      # Pass environment variables directly or use an .env file for compose
-      # Its generally better to pass secrets via Docker secrets or env vars
-      # for production, but this is convenient for development.
-      ENVIRONMENT:docker
-      SECRET_KEY: ${SECRET_KEY}
-      APP_USERNAME: ${APP_USERNAME}
-      APP_PASSWORD: ${APP_PASSWORD}
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
-      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8090} # Default if not set in host .env
-      PORT:8090 # Default 
-      HOST:0.0.0.0 # Default
-    restart: unless-stopped # Automatically restart if it crashes
+      ENVIRONMENT: docker
+      APP_BASE_URL: "${APP_BASE_URL:-http://localhost:8090}"
+      PORT: 8090
+      HOST: 0.0.0.0
+    restart: unless-stopped
 
 volumes:
   watcher_data:
