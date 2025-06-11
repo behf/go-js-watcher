@@ -9,7 +9,7 @@ import (
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger" // Import gorm logger for better control
+	"gorm.io/gorm/logger" // Import gorm logger
 )
 
 var DB *gorm.DB // Global variable to hold the database connection
@@ -18,7 +18,6 @@ var DB *gorm.DB // Global variable to hold the database connection
 func Init() {
 	var err error
 
-	// Ensure the base directory for the database file exists
 	exePath, err := os.Executable()
 	if err != nil {
 		log.Fatalf("Failed to get executable path: %v", err)
@@ -27,8 +26,9 @@ func Init() {
 	dbPath := filepath.Join(exeDir, "watcher.db")
 
 	DB, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{
-		// Optional: Configure GORM logger for better debugging
-		Logger: logger.Default.LogMode(logger.Info), // Log SQL queries and info
+		// Change LogMode to Silent to disable SQL logs
+		// Or logger.Error to only log errors related to GORM operations
+		Logger: logger.Default.LogMode(logger.Error),
 	})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
@@ -36,7 +36,6 @@ func Init() {
 
 	log.Println("Database connection established.")
 
-	// AutoMigrate will create/update tables based on your models
 	err = DB.AutoMigrate(&models.WatchedUrl{}, &models.ChangeEvent{})
 	if err != nil {
 		log.Fatalf("Failed to auto migrate database: %v", err)

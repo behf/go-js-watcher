@@ -105,7 +105,7 @@ func main() {
 	// --- Web Server Setup (Echo) ---
 	e := echo.New()
 
-	e.Use(middleware.Logger())
+	// e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
 	staticPath := filepath.Join(getExecutableDir(), "static")
