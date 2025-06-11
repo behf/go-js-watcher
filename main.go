@@ -66,11 +66,12 @@ func pluralS(count int) string {
 }
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("No .env file found or error loading .env:", err)
+	if os.Getenv("ENVIRONMENT") != "docker" {
+		err := godotenv.Load()
+		if err != nil {
+			log.Println("No .env file found or error loading .env:", err)
+		}
 	}
-
 	// --- Configuration from Environment Variables ---
 	flaskSecretKey := os.Getenv("SECRET_KEY")
 	if flaskSecretKey == "" {

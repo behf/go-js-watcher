@@ -12,14 +12,15 @@ services:
       # Pass environment variables directly or use an .env file for compose
       # Its generally better to pass secrets via Docker secrets or env vars
       # for production, but this is convenient for development.
+      ENVIRONMENT:docker
       SECRET_KEY: ${SECRET_KEY}
       APP_USERNAME: ${APP_USERNAME}
       APP_PASSWORD: ${APP_PASSWORD}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8090} # Default if not set in host .env
-      PORT: 8090 # Default 
-      HOST: 0.0.0.0 # Default
+      PORT:8090 # Default 
+      HOST:0.0.0.0 # Default
     restart: unless-stopped # Automatically restart if it crashes
 
 volumes:
