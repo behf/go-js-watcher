@@ -244,7 +244,7 @@ func RemoveURL(c echo.Context) error {
 		return c.Redirect(http.StatusFound, "/dashboard")
 	}
 
-	if result := database.DB.Delete(&urlToDelete); result.Error != nil {
+	if result := database.DB.Unscoped().Delete(&urlToDelete); result.Error != nil {
 		Flash(c, "Failed to remove URL: "+result.Error.Error())
 		return c.Redirect(http.StatusFound, "/dashboard")
 	}
