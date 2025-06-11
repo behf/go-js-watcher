@@ -287,10 +287,32 @@ func ViewDiff(c echo.Context) error {
 
 	changeEvent.DetectedAt = changeEvent.DetectedAt.Local()
 
+	// --- NEW: Find Previous and Next ChangeEvent IDs ---
+	var prevChangeID, nextChangeID uint
+
+	// Find the previous change event for the same URL (ID < current_ID, ordered by ID DESC)
+	var prevChangeEvent models.ChangeEvent
+	if result := database.DB.
+		Where("url_id = ? AND id < ?", changeEvent.URLID, changeEvent.ID).
+		Order("id DESC").Limit(1).First(&prevChangeEvent); result.Error == nil {
+		prevChangeID = prevChangeEvent.ID
+	}
+
+	// Find the next change event for the same URL (ID > current_ID, ordered by ID ASC)
+	var nextChangeEvent models.ChangeEvent
+	if result := database.DB.
+		Where("url_id = ? AND id > ?", changeEvent.URLID, changeEvent.ID).
+		Order("id ASC").Limit(1).First(&nextChangeEvent); result.Error == nil {
+		nextChangeID = nextChangeEvent.ID
+	}
+	// --- END NEW ---
+
 	return c.Render(http.StatusOK, "view_diff.html", echo.Map{
-		"ChangeEvent": changeEvent,
-		"WatchedURL":  watchedURL,
-		"DiffContent": template.HTML(changeEvent.DiffText),
+		"ChangeEvent":  changeEvent,
+		"WatchedURL":   watchedURL,
+		"DiffContent":  template.HTML(changeEvent.DiffText),
+		"PrevChangeID": prevChangeID, // Pass previous ID
+		"NextChangeID": nextChangeID, // Pass next ID
 	})
 }
 

@@ -517,3 +517,53 @@ input:checked + .slider:before {
 .url-disabled .status-text {
     color: #6c757d; /* Keep disabled text gray */
 }
+
+.diff-navigation {
+    margin-top: 10px; /* Space from H1 */
+    display: flex;
+    justify-content: center;
+    gap: 15px; /* Space between buttons */
+    width: 100%; /* Take full width */
+    padding-bottom: 10px; /* Space below navigation buttons */
+    border-bottom: 1px solid #eee; /* Subtle separator */
+}
+
+.nav-button {
+    background-color: #3498db;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: background-color 0.2s;
+    white-space: nowrap; /* Prevent button text from wrapping */
+}
+
+.nav-button:hover:not(.disabled) {
+    background-color: #2980b9;
+    text-decoration: none;
+}
+
+.nav-button.disabled {
+    background-color: #e0e0e0;
+    color: #a0a0a0;
+    cursor: not-allowed;
+}
+
+/* Ensure header children stack well on smaller screens */
+@media (max-width: 600px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .diff-navigation {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+    .diff-navigation .nav-button {
+        text-align: center;
+    }
+}
