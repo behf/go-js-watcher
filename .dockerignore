@@ -1,0 +1,10 @@
+.git
+.env*           # IMPORTANT: Do not copy .env files into the image for security!
+watcher.db      # This will be created/mounted as a volume, not part of the image
+*.exe
+*.log
+main            # The built executable if you compile locally
+go-js-watcher      # Another common name for the local executable
+js-watcher
+tmp/
+vendor/         # If you use go modules vendor mode
