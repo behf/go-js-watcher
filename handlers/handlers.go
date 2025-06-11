@@ -293,6 +293,96 @@ func ViewDiff(c echo.Context) error {
 	})
 }
 
+// EditURLGet renders the form to edit an existing URL.
+func EditURLGet(c echo.Context) error {
+	urlIDStr := c.Param("id")
+	urlID, err := strconv.ParseUint(urlIDStr, 10, 32)
+	if err != nil {
+		Flash(c, "Invalid URL ID.")
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	var urlToEdit models.WatchedUrl
+	if result := database.DB.First(&urlToEdit, urlID); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			Flash(c, "URL not found.")
+			return c.Redirect(http.StatusFound, "/dashboard")
+		}
+		Flash(c, "Database error finding URL: "+result.Error.Error())
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	return c.Render(http.StatusOK, "edit_url.html", echo.Map{
+		"URL":     urlToEdit,
+		"Flashes": GetFlashes(c),
+	})
+}
+
+// EditURLPost handles the submission of the edited URL form.
+func EditURLPost(c echo.Context, botToken, chatID string) error {
+	urlIDStr := c.FormValue("id")
+	newURL := c.FormValue("url")
+	newIntervalStr := c.FormValue("interval")
+
+	urlID, err := strconv.ParseUint(urlIDStr, 10, 32)
+	if err != nil {
+		Flash(c, "Invalid URL ID for edit.")
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	if newURL == "" {
+		Flash(c, "URL cannot be empty.")
+		return c.Redirect(http.StatusFound, fmt.Sprintf("/edit_url/%d", urlID))
+	}
+
+	var newInterval int
+	if newIntervalStr == "" {
+		newInterval = 300 // Default if empty
+	} else {
+		parsedInterval, err := strconv.Atoi(newIntervalStr)
+		if err != nil || parsedInterval <= 0 {
+			Flash(c, "Invalid interval. Must be a positive number.")
+			return c.Redirect(http.StatusFound, fmt.Sprintf("/edit_url/%d", urlID))
+		}
+		newInterval = parsedInterval
+	}
+
+	var existingURL models.WatchedUrl
+	if result := database.DB.First(&existingURL, urlID); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			Flash(c, "URL to edit not found.")
+			return c.Redirect(http.StatusFound, "/dashboard")
+		}
+		Flash(c, "Database error finding URL for edit: "+result.Error.Error())
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	// Check if the new URL is already watched by another entry (if URL itself changed)
+	if existingURL.URL != newURL {
+		var conflictURL models.WatchedUrl
+		// Use Unscoped to check against soft-deleted URLs too, for stricter uniqueness
+		if result := database.DB.Unscoped().Where("url = ?", newURL).First(&conflictURL); result.Error == nil && conflictURL.ID != existingURL.ID {
+			Flash(c, "Another URL entry with this URL already exists.")
+			return c.Redirect(http.StatusFound, fmt.Sprintf("/edit_url/%d", urlID))
+		} else if result.Error != gorm.ErrRecordNotFound {
+			Flash(c, "Database error checking new URL for conflict: "+result.Error.Error())
+			return c.Redirect(http.StatusFound, fmt.Sprintf("/edit_url/%d", urlID))
+		}
+	}
+
+	// Update fields
+	existingURL.URL = newURL
+	existingURL.IntervalSeconds = newInterval
+
+	if result := database.DB.Save(&existingURL); result.Error != nil {
+		Flash(c, "Failed to update URL: "+result.Error.Error())
+		return c.Redirect(http.StatusFound, fmt.Sprintf("/edit_url/%d", urlID))
+	}
+
+	Flash(c, "URL updated successfully.")
+	return c.Redirect(http.StatusFound, "/dashboard")
+}
+
 // HTMLTemplateRenderer is a custom renderer for Echo
 type HTMLTemplateRenderer struct {
 	Templates *template.Template

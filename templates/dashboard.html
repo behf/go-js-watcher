@@ -23,7 +23,6 @@
         </ul>
         {{ end }}
 
-        <!-- New Dashboard Summary Section -->
         <section class="dashboard-summary">
             <h2>Summary</h2>
             <div class="summary-cards">
@@ -93,7 +92,10 @@
                         </ul>
                     </td>
                     <td>
-                        <form action="/remove_url" method="post">
+                        <!-- Edit Button -->
+                        <a href="/edit_url/{{ .ID }}" class="button-edit">Edit</a>
+                        <!-- Remove Form (unchanged) -->
+                        <form action="/remove_url" method="post" style="display: inline-block; margin-left: 5px;">
                             <input type="hidden" name="id" value="{{ .ID }}">
                             <button type="submit">Remove</button>
                         </form>

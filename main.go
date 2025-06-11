@@ -139,6 +139,11 @@ func main() {
 	authGroup.POST("/remove_url", handlers.RemoveURL)
 	authGroup.GET("/diff/:event_id", handlers.ViewDiff)
 
+	authGroup.GET("/edit_url/:id", handlers.EditURLGet)
+	authGroup.POST("/edit_url", func(c echo.Context) error {
+		return handlers.EditURLPost(c, telegramBotToken, telegramChatID)
+	})
+
 	// --- Start Background Scheduler ---
 	services.StartScheduler(baseURL, telegramBotToken, telegramChatID)
 
