@@ -72,9 +72,9 @@ func main() {
 	}
 
 	// --- Configuration from Environment Variables ---
-	flaskSecretKey := os.Getenv("FLASK_SECRET_KEY")
+	flaskSecretKey := os.Getenv("SECRET_KEY")
 	if flaskSecretKey == "" {
-		log.Println("FLASK_SECRET_KEY not set, using default. PLEASE SET A STRONG SECRET KEY IN PRODUCTION.")
+		log.Println("SECRET_KEY not set, using default. PLEASE SET A STRONG SECRET KEY IN PRODUCTION.")
 		flaskSecretKey = "a-very-secret-key-default"
 	}
 	appUsername := os.Getenv("APP_USERNAME")
@@ -87,8 +87,7 @@ func main() {
 	}
 	baseURL := os.Getenv("APP_BASE_URL")
 	if baseURL == "" {
-		baseURL = "http://localhost:8080"
-		log.Println("APP_BASE_URL not set, defaulting to", baseURL)
+		log.Println("APP_BASE_URL not set")
 	}
 
 	telegramBotToken := os.Getenv("TELEGRAM_BOT_TOKEN")
@@ -156,8 +155,12 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
+	host := os.Getenv("HOST")
+	if host == "" {
+		host = "localhost"
+	}
 	log.Printf("Starting web server on :%s", port)
-	e.Logger.Fatal(e.Start(":" + port))
+	e.Logger.Fatal(e.Start(host + ":" + port))
 }
 
 func getExecutableDir() string {
