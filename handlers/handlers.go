@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -380,6 +381,43 @@ func EditURLPost(c echo.Context, botToken, chatID string) error {
 	}
 
 	Flash(c, "URL updated successfully.")
+	return c.Redirect(http.StatusFound, "/dashboard")
+}
+
+// ToggleURLActive handles enabling/disabling a URL.
+func ToggleURLActive(c echo.Context) error {
+	urlIDStr := c.FormValue("id")
+	urlID, err := strconv.ParseUint(urlIDStr, 10, 32)
+	if err != nil {
+		Flash(c, "Invalid URL ID.")
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	var urlEntry models.WatchedUrl
+	if result := database.DB.First(&urlEntry, urlID); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			Flash(c, "URL not found.")
+		} else {
+			Flash(c, "Database error finding URL: "+result.Error.Error())
+		}
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	urlEntry.IsActive = !urlEntry.IsActive // Toggle the boolean status
+
+	if result := database.DB.Save(&urlEntry); result.Error != nil {
+		Flash(c, "Failed to toggle URL status: "+result.Error.Error())
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	if urlEntry.IsActive {
+		Flash(c, fmt.Sprintf("Started watching %s again.", urlEntry.URL))
+		// Optionally trigger an immediate check when enabling
+		go services.CheckURLForChanges(urlEntry.ID, BaseURL, os.Getenv("TELEGRAM_BOT_TOKEN"), os.Getenv("TELEGRAM_CHAT_ID"))
+	} else {
+		Flash(c, fmt.Sprintf("Stopped watching %s.", urlEntry.URL))
+	}
+
 	return c.Redirect(http.StatusFound, "/dashboard")
 }
 

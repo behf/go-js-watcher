@@ -14,6 +14,7 @@ type WatchedUrl struct {
 	LastContent     string
 	LastChecked     *time.Time    // Use pointer to allow nil for initial state
 	Status          string        `gorm:"default:'Pending'"`
+	IsActive        bool          `gorm:"default:true"`
 	Changes         []ChangeEvent `gorm:"foreignKey:URLID;constraint:OnDelete:CASCADE;"` // One-to-many relationship
 }
 

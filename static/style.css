@@ -428,3 +428,92 @@ td button:hover {
     background-color: #5a6268; /* Darker gray on hover */
     text-decoration: none;
 }
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px; /* Smaller width */
+    height: 20px; /* Smaller height */
+    vertical-align: middle; /* Align with text */
+    margin-right: 8px; /* Space between switch and text */
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px; /* Smaller circle */
+    width: 16px; /* Smaller circle */
+    left: 2px; /* Adjusted position */
+    bottom: 2px; /* Adjusted position */
+    background-color: white;
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: #2196F3; /* Blue when checked */
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+    -webkit-transform: translateX(20px); /* Adjusted translation */
+    -ms-transform: translateX(20px);
+    transform: translateX(20px);
+}
+
+/* Rounded sliders */
+.slider.round {
+    border-radius: 20px; /* Half of height for rounded corners */
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+/* Text next to the switch */
+.status-text {
+    vertical-align: middle;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+/* Style for disabled rows */
+.url-disabled {
+    background-color: #f8f8f8; /* Light gray background */
+    opacity: 0.7; /* Slightly faded */
+    font-style: italic;
+    color: #6c757d;
+}
+
+/* Ensure links/buttons in disabled rows are still clickable but look muted */
+.url-disabled a,
+.url-disabled button {
+    pointer-events: auto; /* Ensure clickable */
+    cursor: pointer;
+    opacity: 0.8; /* Slightly muted */
+}
+
+.url-disabled .status-text {
+    color: #6c757d; /* Keep disabled text gray */
+}

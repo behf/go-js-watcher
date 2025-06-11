@@ -20,7 +20,7 @@ func StartScheduler(diffViewBaseURL, botToken, chatID string) {
 		now := time.Now().UTC()
 
 		var urlsToProcess []models.WatchedUrl
-		result := database.DB.Find(&urlsToProcess)
+		result := database.DB.Where("is_active = ?", true).Find(&urlsToProcess)
 		if result.Error != nil {
 			log.Printf("Scheduler: Error fetching URLs: %v", result.Error)
 			return
