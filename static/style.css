@@ -1,6 +1,6 @@
 /* General Body & Layout */
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: -apple-system, BlinkMacMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     background-color: #f4f7f9;
     color: #333;
     margin: 0;
@@ -325,6 +325,7 @@ td button:hover {
     background-color: #c0392b;
 }
 
+/* New Styles for Read/Unread Changes */
 .change-unread {
     font-weight: bold;
     color: #0056b3; /* A distinct color for unread, e.g., a darker blue */
@@ -343,3 +344,48 @@ td button:hover {
     color: #6c757d; /* Ensure link color matches */
 }
 
+
+/* Dashboard Summary specific styles */
+.dashboard-summary {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background-color: #eaf6ff;
+    border: 1px solid #b8dfff;
+    border-radius: 8px;
+}
+
+.dashboard-summary h2 {
+    margin-top: 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #a6d8ff;
+    margin-bottom: 1.5rem;
+}
+
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.summary-cards .card {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.summary-cards .card h3 {
+    margin-top: 0;
+    font-size: 1rem;
+    color: #34495e;
+    margin-bottom: 0.5rem;
+}
+
+.summary-cards .card p {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin: 0;
+}

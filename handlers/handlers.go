@@ -1,19 +1,21 @@
 package handlers
 
 import (
-	"html/template" // For HTML templating
-	"io"
+	"fmt" // Import fmt for Sprintf
+	"html/template"
 	"log"
-	"net/http" // Standard HTTP package
-	"strconv"  // For string to integer conversion
+	"net/http"
+	"strconv"
+	"time"
 
-	// For time operations
-	"go-js-watcher/database" // Import your database package
-	"go-js-watcher/models"   // Import your models package
-	"go-js-watcher/services" // Import your services package (for CheckURLForChanges)
+	"go-js-watcher/database"
+	"go-js-watcher/models"
+	"go-js-watcher/services"
 
-	"github.com/gorilla/sessions" // For session management (similar to Flask's session)
-	"github.com/labstack/echo/v4" // The Echo web framework
+	"io"
+
+	"github.com/gorilla/sessions"
+	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
@@ -24,12 +26,8 @@ const (
 )
 
 var (
-	// Store for gorilla/sessions. Replace with a production-ready store in a real app.
-	// For simplicity, using a cookie store, but a file store or Redis store is better for production.
-	// Make sure this key is truly secret and loaded from environment variables in main.go
 	store *sessions.CookieStore
 
-	// These will be set in main.go
 	AppUsername string
 	AppPassword string
 	BaseURL     string // Base URL of the application, used for constructing diff links
@@ -121,7 +119,6 @@ func Logout(c echo.Context) error {
 func Dashboard(c echo.Context) error {
 	var urls []models.WatchedUrl
 	result := database.DB.Preload("Changes", func(db *gorm.DB) *gorm.DB {
-		// Ordering by DetectedAt DESC and ID DESC ensures stable ordering for "last 5"
 		return db.Order("detected_at DESC, id DESC").Limit(5)
 	}).Find(&urls)
 
@@ -144,9 +141,38 @@ func Dashboard(c echo.Context) error {
 		}
 	}
 
+	// --- Calculate Dashboard Metrics ---
+	var totalURLs int64
+	database.DB.Model(&models.WatchedUrl{}).Count(&totalURLs)
+
+	var urlsWithUnreadChanges int64
+	database.DB.Model(&models.WatchedUrl{}).
+		Joins("JOIN change_events ON watched_urls.id = change_events.url_id").
+		Where("change_events.is_read = ?", false).
+		Distinct("watched_urls.id").
+		Count(&urlsWithUnreadChanges)
+
+	var avgIntervalSeconds float64
+	// Use Raw SQL for AVG to ensure correct float return from database driver
+	row := database.DB.Model(&models.WatchedUrl{}).Select("COALESCE(AVG(interval_seconds), 0)").Row()
+	row.Scan(&avgIntervalSeconds)
+
+	now := time.Now().UTC()
+	twentyFourHoursAgo := now.Add(-24 * time.Hour)
+	sevenDaysAgo := now.Add(-7 * 24 * time.Hour)
+
+	var changes24h, changes7d int64
+	database.DB.Model(&models.ChangeEvent{}).Where("detected_at >= ?", twentyFourHoursAgo).Count(&changes24h)
+	database.DB.Model(&models.ChangeEvent{}).Where("detected_at >= ?", sevenDaysAgo).Count(&changes7d)
+
 	return c.Render(http.StatusOK, "dashboard.html", echo.Map{
-		"WatchedUrls": urls,
-		"Flashes":     GetFlashes(c),
+		"WatchedUrls":      urls,
+		"Flashes":          GetFlashes(c),
+		"TotalURLs":        totalURLs,
+		"URLsWithUnread":   urlsWithUnreadChanges,
+		"AvgCheckInterval": fmt.Sprintf("%.1f seconds", avgIntervalSeconds), // Format as string
+		"ChangesLast24h":   changes24h,
+		"ChangesLast7d":    changes7d,
 	})
 }
 
@@ -194,8 +220,6 @@ func AddURL(c echo.Context, botToken, chatID string) error {
 
 	Flash(c, "Started watching "+url+".")
 
-	// Immediately queue a check for the new URL in a goroutine
-	// Pass credentials here
 	go services.CheckURLForChanges(newURL.ID, BaseURL, botToken, chatID)
 
 	return c.Redirect(http.StatusFound, "/dashboard")
@@ -220,8 +244,6 @@ func RemoveURL(c echo.Context) error {
 		return c.Redirect(http.StatusFound, "/dashboard")
 	}
 
-	// GORM's cascade delete should handle ChangeEvents if configured on the model.
-	// We configured `cascade:"all, delete-orphan"` on WatchedUrl.Changes.
 	if result := database.DB.Delete(&urlToDelete); result.Error != nil {
 		Flash(c, "Failed to remove URL: "+result.Error.Error())
 		return c.Redirect(http.StatusFound, "/dashboard")
@@ -231,7 +253,7 @@ func RemoveURL(c echo.Context) error {
 	return c.Redirect(http.StatusFound, "/dashboard")
 }
 
-// ViewDiff renders the diff view for a specific change event.
+// ViewDiff renders the diff view for a specific change event and marks it as read.
 func ViewDiff(c echo.Context) error {
 	eventIDStr := c.Param("event_id")
 	eventID, err := strconv.ParseUint(eventIDStr, 10, 32)
@@ -247,11 +269,9 @@ func ViewDiff(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Database error retrieving change event: "+result.Error.Error())
 	}
 
-	// Mark the change event as read
 	if !changeEvent.IsRead {
 		changeEvent.IsRead = true
 		if result := database.DB.Save(&changeEvent); result.Error != nil {
-			// Log the error but don't prevent showing the diff
 			log.Printf("Error marking change event %d as read: %v", changeEvent.ID, result.Error)
 		}
 	}

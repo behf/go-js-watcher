@@ -23,6 +23,33 @@
         </ul>
         {{ end }}
 
+        <!-- New Dashboard Summary Section -->
+        <section class="dashboard-summary">
+            <h2>Summary</h2>
+            <div class="summary-cards">
+                <div class="card">
+                    <h3>Total URLs Watched</h3>
+                    <p>{{ .TotalURLs }}</p>
+                </div>
+                <div class="card">
+                    <h3>URLs with Unread Changes</h3>
+                    <p>{{ .URLsWithUnread }}</p>
+                </div>
+                <div class="card">
+                    <h3>Average Check Interval</h3>
+                    <p>{{ .AvgCheckInterval }}</p>
+                </div>
+                <div class="card">
+                    <h3>Changes (Last 24h)</h3>
+                    <p>{{ .ChangesLast24h }}</p>
+                </div>
+                <div class="card">
+                    <h3>Changes (Last 7d)</h3>
+                    <p>{{ .ChangesLast7d }}</p>
+                </div>
+            </div>
+        </section>
+
         <h2>Add New URL to Watch</h2>
         <form action="/add_url" method="post">
             <input type="url" name="url" placeholder="https://example.com/script.js" required size="50">
