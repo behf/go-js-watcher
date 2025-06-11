@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Changes for {{ .WatchedURL.URL }} - JS Watcher</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>All Changes for: {{ .WatchedURL.URL }}</h1>
+            <p><a href="/dashboard">Back to Dashboard</a></p>
+        </header>
+
+        {{ if .Flashes }}
+        <ul class="flashes">
+            {{ range .Flashes }}
+            <li>{{ . }}</li>
+            {{ end }}
+        </ul>
+        {{ end }}
+
+        <div class="all-changes-list">
+            {{ if .Changes }}
+            <ul>
+                {{ range .Changes }}
+                <li class="{{ if .IsRead }}change-read{{ else }}change-unread{{ end }}">
+                    <a href="/diff/{{ .ID }}">
+                        {{ .DetectedAt.Format "2006-01-02 15:04:05" }} - Change ID: {{ .ID }}
+                    </a>
+                </li>
+                {{ end }}
+            </ul>
+            {{ else }}
+            <p>No changes recorded for this URL yet.</p>
+            {{ end }}
+        </div>
+    </div>
+</body>
+</html>

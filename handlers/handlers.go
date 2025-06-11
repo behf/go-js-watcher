@@ -421,6 +421,45 @@ func ToggleURLActive(c echo.Context) error {
 	return c.Redirect(http.StatusFound, "/dashboard")
 }
 
+// AllChangesGet displays all historical change events for a specific URL.
+func AllChangesGet(c echo.Context) error {
+	urlIDStr := c.Param("url_id")
+	urlID, err := strconv.ParseUint(urlIDStr, 10, 32)
+	if err != nil {
+		Flash(c, "Invalid URL ID.")
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	var watchedURL models.WatchedUrl
+	// Fetch the URL itself
+	if result := database.DB.First(&watchedURL, urlID); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			Flash(c, "URL not found.")
+			return c.Redirect(http.StatusFound, "/dashboard")
+		}
+		Flash(c, "Database error finding URL: "+result.Error.Error())
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	// Fetch all changes for this URL, ordered by most recent first
+	var changes []models.ChangeEvent
+	if result := database.DB.Where("url_id = ?", urlID).Order("detected_at DESC, id DESC").Find(&changes); result.Error != nil {
+		Flash(c, "Database error retrieving changes: "+result.Error.Error())
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	// Convert times to local timezone for display
+	for i := range changes {
+		changes[i].DetectedAt = changes[i].DetectedAt.Local()
+	}
+
+	return c.Render(http.StatusOK, "all_changes.html", echo.Map{
+		"WatchedURL": watchedURL, // Pass the URL for context in the template
+		"Changes":    changes,    // Pass all changes
+		"Flashes":    GetFlashes(c),
+	})
+}
+
 // HTMLTemplateRenderer is a custom renderer for Echo
 type HTMLTemplateRenderer struct {
 	Templates *template.Template

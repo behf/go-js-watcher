@@ -61,7 +61,7 @@
             <thead>
                 <tr>
                     <th>URL</th>
-                    <th>Status</th> <!-- Changed to Status -->
+                    <th>Status</th>
                     <th>Check Interval (s)</th>
                     <th>Last Checked</th>
                     <th>Recent Changes (Last 5)</th>
@@ -71,7 +71,7 @@
             <tbody>
                 {{ if .WatchedUrls }}
                 {{ range .WatchedUrls }}
-                <tr class="{{ if not .IsActive }}url-disabled{{ end }}"> <!-- Apply class if disabled -->
+                <tr class="{{ if not .IsActive }}url-disabled{{ end }}">
                     <td>{{ .URL }}</td>
                     <td>
                         <form action="/toggle_url_active" method="post" style="display: inline-block;">
@@ -94,11 +94,11 @@
                                     {{ .DetectedAt.Format "2006-01-02 15:04" }}
                                 </a>
                             </li>
+                            {{ end }}
+                            <li><a href="/all_changes/{{ .ID }}">View All Changes ({{ len .Changes }})</a></li> <!-- NEW LINK -->
                             {{ else }}
                             <li><i>No recent changes. Status: {{ .Status }}</i></li>
-                            {{ end }}
-                            {{ else }}
-                            <li><i>{{ .Status }}</i></li>
+                            <li><a href="/all_changes/{{ .ID }}">View All Changes (0)</a></li> <!-- For URLs with no changes yet -->
                             {{ end }}
                         </ul>
                     </td>

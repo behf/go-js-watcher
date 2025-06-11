@@ -146,6 +146,8 @@ func main() {
 
 	authGroup.POST("/toggle_url_active", handlers.ToggleURLActive)
 
+	authGroup.GET("/all_changes/:url_id", handlers.AllChangesGet)
+
 	// --- Start Background Scheduler ---
 	services.StartScheduler(baseURL, telegramBotToken, telegramChatID)
 
