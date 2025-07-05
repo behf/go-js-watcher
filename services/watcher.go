@@ -22,23 +22,28 @@ import (
 
 // sendTelegramNotification sends a simple notification to Telegram.
 // Now accepts botToken and chatID as arguments.
-func sendTelegramNotification(botToken, chatID, url, diffLink string) {
+func sendTelegramNotification(botToken, chatID, url, diffLink string, isDowntimeAlert bool) {
 	if botToken == "" || chatID == "" {
 		log.Println("Telegram credentials not provided to notification function. Skipping notification.")
 		return
 	}
 
-	bot, err := tgbotapi.NewBotAPI(botToken) // Using tgbotapi as you noted you fixed it to.
+	bot, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
 		log.Printf("Failed to create Telegram bot API: %v", err)
 		return
 	}
 
-	messageText := fmt.Sprintf("<b>Change detected in:</b> %s\n\n", html.EscapeString(url))
-	if diffLink != "" {
-		messageText += fmt.Sprintf("View details on the dashboard:\n\n%s", html.EscapeString(diffLink))
+	var messageText string
+	if isDowntimeAlert {
+		messageText = fmt.Sprintf("<b>Downtime Alert:</b> URL %s appears to be down.", html.EscapeString(url))
 	} else {
-		messageText += "View details on the dashboard."
+		messageText = fmt.Sprintf("<b>Change detected in:</b> %s\n\n", html.EscapeString(url))
+		if diffLink != "" {
+			messageText += fmt.Sprintf("View details on the dashboard:\n\n%s", html.EscapeString(diffLink))
+		} else {
+			messageText += "View details on the dashboard."
+		}
 	}
 
 	// Telegram chat ID must be an int64. Parse it.
@@ -48,7 +53,7 @@ func sendTelegramNotification(botToken, chatID, url, diffLink string) {
 		return
 	}
 
-	msg := tgbotapi.NewMessage(parsedChatID, messageText) // Using tgbotapi.NewMessage
+	msg := tgbotapi.NewMessage(parsedChatID, messageText)
 	msg.ParseMode = tgbotapi.ModeHTML
 	msg.DisableWebPagePreview = false
 
@@ -73,23 +78,47 @@ func CheckURLForChanges(urlID uint, diffViewBaseURL, botToken, chatID string) st
 		return fmt.Sprintf("Error fetching URL ID %d: %v", urlID, result.Error)
 	}
 
+	const maxRetries = 3
+	const baseBackoff = 2 * time.Second
+	var lastErr error
+
 	client := &http.Client{
 		Timeout: 20 * time.Second,
 	}
-	req, err := http.NewRequest("GET", urlEntry.URL, nil)
-	if err != nil {
-		urlEntry.Status = fmt.Sprintf("Failed to create request: %v", err)
-		db.Save(&urlEntry)
-		log.Printf("Error creating request for %s: %v", urlEntry.URL, err)
-		return urlEntry.Status
-	}
-	req.Header.Set("User-Agent", "JS-Watcher-Bot/1.0 (Go)")
 
-	resp, err := client.Do(req)
+	var resp *http.Response
+	var err error
+
+	for i := 0; i < maxRetries; i++ {
+		req, err := http.NewRequest("GET", urlEntry.URL, nil)
+		if err != nil {
+			urlEntry.Status = fmt.Sprintf("Failed to create request: %v", err)
+			db.Save(&urlEntry)
+			log.Printf("Error creating request for %s: %v", urlEntry.URL, err)
+			return urlEntry.Status
+		}
+		req.Header.Set("User-Agent", "JS-Watcher-Bot/1.0 (Go)")
+
+		resp, err = client.Do(req)
+		if err == nil && resp.StatusCode == http.StatusOK {
+			break // Success
+		}
+
+		if resp != nil {
+			resp.Body.Close() // Close body on non-200 responses
+		}
+
+		lastErr = err
+		backoff := baseBackoff * time.Duration(1<<i) // Exponential backoff
+		log.Printf("Attempt %d/%d for %s failed: %v. Retrying in %v...", i+1, maxRetries, urlEntry.URL, err, backoff)
+		time.Sleep(backoff)
+	}
+
 	if err != nil {
-		urlEntry.Status = fmt.Sprintf("Failed to fetch: %v", err)
+		urlEntry.Status = fmt.Sprintf("Failed after %d retries: %v", maxRetries, lastErr)
 		db.Save(&urlEntry)
-		log.Printf("Error fetching %s: %v", urlEntry.URL, err)
+		log.Printf("Error fetching %s after multiple retries: %v", urlEntry.URL, lastErr)
+		sendTelegramNotification(botToken, chatID, urlEntry.URL, "", true)
 		return urlEntry.Status
 	}
 	defer resp.Body.Close()
@@ -144,7 +173,7 @@ func CheckURLForChanges(urlID uint, diffViewBaseURL, botToken, chatID string) st
 		if diffViewBaseURL != "" {
 			diffLink = fmt.Sprintf("%s/diff/%d", diffViewBaseURL, newChange.ID)
 		}
-		sendTelegramNotification(botToken, chatID, urlEntry.URL, diffLink) // Pass credentials here
+		sendTelegramNotification(botToken, chatID, urlEntry.URL, diffLink, false) // Pass credentials here
 
 		urlEntry.LastContent = currentContent
 		urlEntry.Status = fmt.Sprintf("Change detected at %s", now.Format("2006-01-02 15:04 UTC"))
