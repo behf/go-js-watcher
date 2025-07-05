@@ -1,3 +1,4 @@
 watcher.db*
 .env
 js-watcher
+go-js-watcher
