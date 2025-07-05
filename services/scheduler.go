@@ -15,7 +15,7 @@ import (
 func StartScheduler(diffViewBaseURL, botToken, chatID string) {
 	c := cron.New()
 
-	c.AddFunc("@every 10s", func() {
+	c.AddFunc("@every 1m", func() {
 		log.Println("Scheduler: Running periodic check for URLs due...")
 		now := time.Now().UTC()
 
@@ -35,7 +35,7 @@ func StartScheduler(diffViewBaseURL, botToken, chatID string) {
 			}
 
 			timeSinceLastCheck := now.Sub(*urlEntry.LastChecked)
-			if timeSinceLastCheck.Seconds() >= float64(urlEntry.IntervalSeconds) {
+			if timeSinceLastCheck.Minutes() >= 1 {
 				log.Printf("Scheduler: URL '%s' due for check (last checked %v ago), scheduling.", urlEntry.URL, timeSinceLastCheck.Round(time.Second))
 				// Pass credentials here
 				go CheckURLForChanges(urlEntry.ID, diffViewBaseURL, botToken, chatID)
