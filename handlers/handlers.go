@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"fmt" // Import fmt for Sprintf
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -33,38 +33,35 @@ var (
 
 	AppUsername string
 	AppPassword string
-	BaseURL     string // Base URL of the application, used for constructing diff links
+	BaseURL     string
 )
 
-// SetSessionStore initializes the session store. Call this from main.go.
 func SetSessionStore(secretKey []byte) {
 	store = sessions.NewCookieStore(secretKey)
 	store.Options = &sessions.Options{
 		Path:     "/",
-		MaxAge:   86400 * 7, // 7 days
+		MaxAge:   86400 * 7,
 		HttpOnly: true,
 	}
 }
 
-// Flash adds a message to the session for displaying on the next request.
 func Flash(c echo.Context, message string) {
 	session, _ := store.Get(c.Request(), sessionName)
 	messages := session.Flashes(flashMessages)
 	messages = append(messages, message)
-	session.AddFlash(messages, flashMessages) // Add messages back
+	session.AddFlash(messages, flashMessages)
 	session.Save(c.Request(), c.Response())
 }
 
-// GetFlashes retrieves and clears flash messages.
 func GetFlashes(c echo.Context) []string {
 	session, _ := store.Get(c.Request(), sessionName)
 	flashes := session.Flashes(flashMessages)
-	session.Save(c.Request(), c.Response()) // Save to clear flashes
+	session.Save(c.Request(), c.Response())
 	var messages []string
 	for _, f := range flashes {
 		if msg, ok := f.(string); ok {
 			messages = append(messages, msg)
-		} else if msgArr, ok := f.([]interface{}); ok { // Handle when Flash adds array directly
+		} else if msgArr, ok := f.([]interface{}); ok {
 			for _, m := range msgArr {
 				if mStr, ok := m.(string); ok {
 					messages = append(messages, mStr)
@@ -75,7 +72,6 @@ func GetFlashes(c echo.Context) []string {
 	return messages
 }
 
-// AuthMiddleware checks if the user is logged in.
 func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		session, _ := store.Get(c.Request(), sessionName)
@@ -86,14 +82,12 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-// Login GET renders the login form.
 func LoginGet(c echo.Context) error {
 	return c.Render(http.StatusOK, "login.html", echo.Map{
 		"Flashes": GetFlashes(c),
 	})
 }
 
-// Login POST handles login attempts.
 func LoginPost(c echo.Context) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
@@ -109,16 +103,14 @@ func LoginPost(c echo.Context) error {
 	return c.Redirect(http.StatusFound, "/login")
 }
 
-// Logout clears the session.
 func Logout(c echo.Context) error {
 	session, _ := store.Get(c.Request(), sessionName)
-	session.Values[sessionKey] = false // Set logged_in to false
-	session.Options.MaxAge = -1        // Expire the cookie
+	session.Values[sessionKey] = false
+	session.Options.MaxAge = -1
 	session.Save(c.Request(), c.Response())
 	return c.Redirect(http.StatusFound, "/login")
 }
 
-// Dashboard renders the main dashboard page.
 func Dashboard(c echo.Context) error {
 	var urls []models.WatchedUrl
 	result := database.DB.Preload("Changes", func(db *gorm.DB) *gorm.DB {
@@ -132,13 +124,11 @@ func Dashboard(c echo.Context) error {
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			// No URLs found, which is fine
 		} else {
 			Flash(c, "Error loading URLs: "+result.Error.Error())
 		}
 	}
 
-	// Convert times to local timezone for display
 	for i := range urls {
 		if urls[i].LastChecked != nil {
 			localTime := urls[i].LastChecked.Local()
@@ -149,7 +139,6 @@ func Dashboard(c echo.Context) error {
 		}
 	}
 
-	// --- Calculate Dashboard Metrics ---
 	var totalURLs int64
 	database.DB.Model(&models.WatchedUrl{}).Count(&totalURLs)
 
@@ -160,10 +149,9 @@ func Dashboard(c echo.Context) error {
 		Distinct("watched_urls.id").
 		Count(&urlsWithUnreadChanges)
 
-	var avgIntervalSeconds float64
-	// Use Raw SQL for AVG to ensure correct float return from database driver
+	var averageIntervalSeconds float64
 	row := database.DB.Model(&models.WatchedUrl{}).Select("COALESCE(AVG(interval_seconds), 0)").Row()
-	row.Scan(&avgIntervalSeconds)
+	row.Scan(&averageIntervalSeconds)
 
 	now := time.Now().UTC()
 	twentyFourHoursAgo := now.Add(-24 * time.Hour)
@@ -179,13 +167,12 @@ func Dashboard(c echo.Context) error {
 		"Flashes":          GetFlashes(c),
 		"TotalURLs":        totalURLs,
 		"URLsWithUnread":   urlsWithUnreadChanges,
-		"AvgCheckInterval": fmt.Sprintf("%.1f seconds", avgIntervalSeconds), // Format as string
+		"AvgCheckInterval": fmt.Sprintf("%.1f seconds", averageIntervalSeconds),
 		"ChangesLast24h":   changes24h,
 		"ChangesLast7d":    changes7d,
 	})
 }
 
-// AddURL handles adding a new URL to watch.
 func AddURL(c echo.Context, botToken, chatID string) error {
 	url := c.FormValue("url")
 	intervalStr := c.FormValue("interval")
@@ -197,7 +184,7 @@ func AddURL(c echo.Context, botToken, chatID string) error {
 
 	var interval int
 	if intervalStr == "" {
-		interval = 300 // Default interval
+		interval = 300
 	} else {
 		parsedInterval, err := strconv.Atoi(intervalStr)
 		if err != nil || parsedInterval <= 0 {
@@ -219,7 +206,7 @@ func AddURL(c echo.Context, botToken, chatID string) error {
 	newURL := models.WatchedUrl{
 		URL:             url,
 		IntervalSeconds: interval,
-		Status:          "Scheduled for first check",
+		Status:          " Scheduled for first check",
 	}
 
 	if result := database.DB.Create(&newURL); result.Error != nil {
@@ -234,10 +221,9 @@ func AddURL(c echo.Context, botToken, chatID string) error {
 	return c.Redirect(http.StatusFound, "/dashboard")
 }
 
-// RemoveURL handles removing a watched URL.
 func RemoveURL(c echo.Context) error {
 	urlIDStr := c.FormValue("id")
-	urlID, err := strconv.ParseUint(urlIDStr, 10, 32) // Parse as uint for GORM ID
+	urlID, err := strconv.ParseUint(urlIDStr, 10, 32)
 	if err != nil {
 		Flash(c, "Invalid URL ID.")
 		return c.Redirect(http.StatusFound, "/dashboard")
@@ -262,7 +248,6 @@ func RemoveURL(c echo.Context) error {
 	return c.Redirect(http.StatusFound, "/dashboard")
 }
 
-// ViewDiff renders the diff view for a specific change event and marks it as read.
 func ViewDiff(c echo.Context) error {
 	eventIDStr := c.Param("event_id")
 	eventID, err := strconv.ParseUint(eventIDStr, 10, 32)
@@ -295,10 +280,8 @@ func ViewDiff(c echo.Context) error {
 
 	changeEvent.DetectedAt = changeEvent.DetectedAt.Local()
 
-	// --- NEW: Find Previous and Next ChangeEvent IDs ---
 	var prevChangeID, nextChangeID uint
 
-	// Find the previous change event for the same URL (ID < current_ID, ordered by ID DESC)
 	var prevChangeEvent models.ChangeEvent
 	if result := database.DB.
 		Where("url_id = ? AND id < ?", changeEvent.URLID, changeEvent.ID).
@@ -306,25 +289,22 @@ func ViewDiff(c echo.Context) error {
 		prevChangeID = prevChangeEvent.ID
 	}
 
-	// Find the next change event for the same URL (ID > current_ID, ordered by ID ASC)
 	var nextChangeEvent models.ChangeEvent
 	if result := database.DB.
 		Where("url_id = ? AND id > ?", changeEvent.URLID, changeEvent.ID).
 		Order("id ASC").Limit(1).First(&nextChangeEvent); result.Error == nil {
 		nextChangeID = nextChangeEvent.ID
 	}
-	// --- END NEW ---
 
 	return c.Render(http.StatusOK, "view_diff.html", echo.Map{
 		"ChangeEvent":  changeEvent,
 		"WatchedURL":   watchedURL,
 		"DiffContent":  template.HTML(changeEvent.DiffText),
-		"PrevChangeID": prevChangeID, // Pass previous ID
-		"NextChangeID": nextChangeID, // Pass next ID
+		"PrevChangeID": prevChangeID,
+		"NextChangeID": nextChangeID,
 	})
 }
 
-// EditURLGet renders the form to edit an existing URL.
 func EditURLGet(c echo.Context) error {
 	urlIDStr := c.Param("id")
 	urlID, err := strconv.ParseUint(urlIDStr, 10, 32)
@@ -349,7 +329,6 @@ func EditURLGet(c echo.Context) error {
 	})
 }
 
-// EditURLPost handles the submission of the edited URL form.
 func EditURLPost(c echo.Context, botToken, chatID string) error {
 	urlIDStr := c.FormValue("id")
 	newURL := c.FormValue("url")
@@ -368,7 +347,7 @@ func EditURLPost(c echo.Context, botToken, chatID string) error {
 
 	var newInterval int
 	if newIntervalStr == "" {
-		newInterval = 300 // Default if empty
+		newInterval = 300
 	} else {
 		parsedInterval, err := strconv.Atoi(newIntervalStr)
 		if err != nil || parsedInterval <= 0 {
@@ -388,10 +367,8 @@ func EditURLPost(c echo.Context, botToken, chatID string) error {
 		return c.Redirect(http.StatusFound, "/dashboard")
 	}
 
-	// Check if the new URL is already watched by another entry (if URL itself changed)
 	if existingURL.URL != newURL {
 		var conflictURL models.WatchedUrl
-		// Use Unscoped to check against soft-deleted URLs too, for stricter uniqueness
 		if result := database.DB.Unscoped().Where("url = ?", newURL).First(&conflictURL); result.Error == nil && conflictURL.ID != existingURL.ID {
 			Flash(c, "Another URL entry with this URL already exists.")
 			return c.Redirect(http.StatusFound, fmt.Sprintf("/edit_url/%d", urlID))
@@ -401,7 +378,6 @@ func EditURLPost(c echo.Context, botToken, chatID string) error {
 		}
 	}
 
-	// Update fields
 	existingURL.URL = newURL
 	existingURL.IntervalSeconds = newInterval
 
@@ -414,7 +390,6 @@ func EditURLPost(c echo.Context, botToken, chatID string) error {
 	return c.Redirect(http.StatusFound, "/dashboard")
 }
 
-// ToggleURLActive handles enabling/disabling a URL.
 func ToggleURLActive(c echo.Context) error {
 	urlIDStr := c.FormValue("id")
 	urlID, err := strconv.ParseUint(urlIDStr, 10, 32)
@@ -426,14 +401,14 @@ func ToggleURLActive(c echo.Context) error {
 	var urlEntry models.WatchedUrl
 	if result := database.DB.First(&urlEntry, urlID); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			Flash(c, "URL not found.")
+			Flash(c, "URL not irrespective.")
 		} else {
 			Flash(c, "Database error finding URL: "+result.Error.Error())
 		}
 		return c.Redirect(http.StatusFound, "/dashboard")
 	}
 
-	urlEntry.IsActive = !urlEntry.IsActive // Toggle the boolean status
+	urlEntry.IsActive = !urlEntry.IsActive
 
 	if result := database.DB.Save(&urlEntry); result.Error != nil {
 		Flash(c, "Failed to toggle URL status: "+result.Error.Error())
@@ -442,7 +417,6 @@ func ToggleURLActive(c echo.Context) error {
 
 	if urlEntry.IsActive {
 		Flash(c, fmt.Sprintf("Started watching %s again.", urlEntry.URL))
-		// Optionally trigger an immediate check when enabling
 		go services.CheckURLForChanges(urlEntry.ID, BaseURL, os.Getenv("TELEGRAM_BOT_TOKEN"), os.Getenv("TELEGRAM_CHAT_ID"))
 	} else {
 		Flash(c, fmt.Sprintf("Stopped watching %s.", urlEntry.URL))
@@ -451,7 +425,6 @@ func ToggleURLActive(c echo.Context) error {
 	return c.Redirect(http.StatusFound, "/dashboard")
 }
 
-// AllChangesGet displays all historical change events for a specific URL.
 func AllChangesGet(c echo.Context) error {
 	urlIDStr := c.Param("url_id")
 	urlID, err := strconv.ParseUint(urlIDStr, 10, 32)
@@ -461,7 +434,6 @@ func AllChangesGet(c echo.Context) error {
 	}
 
 	var watchedURL models.WatchedUrl
-	// Fetch the URL itself
 	if result := database.DB.First(&watchedURL, urlID); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			Flash(c, "URL not found.")
@@ -471,21 +443,19 @@ func AllChangesGet(c echo.Context) error {
 		return c.Redirect(http.StatusFound, "/dashboard")
 	}
 
-	// Fetch all changes for this URL, ordered by most recent first
 	var changes []models.ChangeEvent
 	if result := database.DB.Where("url_id = ?", urlID).Order("detected_at DESC, id DESC").Find(&changes); result.Error != nil {
 		Flash(c, "Database error retrieving changes: "+result.Error.Error())
 		return c.Redirect(http.StatusFound, "/dashboard")
 	}
 
-	// Convert times to local timezone for display
 	for i := range changes {
 		changes[i].DetectedAt = changes[i].DetectedAt.Local()
 	}
 
 	return c.Render(http.StatusOK, "all_changes.html", echo.Map{
-		"WatchedURL": watchedURL, // Pass the URL for context in the template
-		"Changes":    changes,    // Pass all changes
+		"WatchedURL": watchedURL,
+		"Changes":    changes,
 		"Flashes":    GetFlashes(c),
 	})
 }
@@ -549,26 +519,63 @@ func AddExtractedJS(c echo.Context, botToken, chatID string) error {
 		return c.Redirect(http.StatusFound, "/dashboard")
 	}
 
-	urlGroup := models.URLGroup{
-		Name:      groupName,
-		SourceURL: sourceURL,
-	}
-	if result := database.DB.Create(&urlGroup); result.Error != nil {
-		Flash(c, "Failed to create URL group: "+result.Error.Error())
+	var urlGroup models.URLGroup
+	err = database.DB.Transaction(func(tx *gorm.DB) error {
+		// Check if a URLGroup with the same sourceURL already exists
+		result := tx.Where("source_url = ?", sourceURL).First(&urlGroup)
+		if result.Error == nil {
+			// Group exists, update name if provided
+			if groupName != "" && groupName != urlGroup.Name {
+				urlGroup.Name = groupName
+				if result := tx.Save(&urlGroup); result.Error != nil {
+					return result.Error
+				}
+			}
+		} else if result.Error == gorm.ErrRecordNotFound {
+			// Create new group if none exists
+			urlGroup = models.URLGroup{
+				Name:      groupName,
+				SourceURL: sourceURL,
+			}
+			if result := tx.Create(&urlGroup); result.Error != nil {
+				return result.Error
+			}
+		} else {
+			return result.Error
+		}
+
+		// Add new JS files as WatchedUrl entries
+		for _, jsFile := range jsFiles {
+			// Check if the URL is already being watched
+			var existingURL models.WatchedUrl
+			if result := tx.Unscoped().Where("url = ?", jsFile).First(&existingURL); result.Error == nil {
+				continue // Skip if URL already exists
+			} else if result.Error != gorm.ErrRecordNotFound {
+				return result.Error
+			}
+
+			newURL := models.WatchedUrl{
+				URL:             jsFile,
+				IntervalSeconds: interval,
+				Status:          "Scheduled for first check",
+				GroupID:         &urlGroup.ID,
+			}
+			if result := tx.Create(&newURL); result.Error != nil {
+				return result.Error
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		Flash(c, "Failed to create or update URL group or add URLs: "+err.Error())
 		return c.Redirect(http.StatusFound, "/dashboard")
 	}
 
+	// Trigger checks for newly added URLs
 	for _, jsFile := range jsFiles {
-		newURL := models.WatchedUrl{
-			URL:             jsFile,
-			IntervalSeconds: interval, // Default interval
-			Status:          "Scheduled for first check",
-			GroupID:         &urlGroup.ID,
-		}
-
-		if result := database.DB.Create(&newURL); result.Error != nil {
-			Flash(c, "Failed to add URL: "+result.Error.Error())
-		} else {
+		var newURL models.WatchedUrl
+		if result := database.DB.Where("url = ? AND group_id = ?", jsFile, urlGroup.ID).First(&newURL); result.Error == nil {
 			go services.CheckURLForChanges(newURL.ID, BaseURL, botToken, chatID)
 		}
 	}
@@ -595,8 +602,21 @@ func RemoveGroup(c echo.Context) error {
 		return c.Redirect(http.StatusFound, "/dashboard")
 	}
 
-	if result := database.DB.Unscoped().Delete(&group); result.Error != nil {
-		Flash(c, "Failed to remove group: "+result.Error.Error())
+	err = database.DB.Transaction(func(tx *gorm.DB) error {
+		// Delete all associated WatchedUrl records (and their ChangeEvent records due to CASCADE)
+		if result := tx.Unscoped().Where("group_id = ?", groupID).Delete(&models.WatchedUrl{}); result.Error != nil {
+			return result.Error
+		}
+
+		// Delete the group
+		if result := tx.Unscoped().Delete(&group); result.Error != nil {
+			return result.Error
+		}
+		return nil
+	})
+
+	if err != nil {
+		Flash(c, "Failed to remove group and its URLs: "+err.Error())
 		return c.Redirect(http.StatusFound, "/dashboard")
 	}
 
@@ -604,13 +624,10 @@ func RemoveGroup(c echo.Context) error {
 	return c.Redirect(http.StatusFound, "/dashboard")
 }
 
-
-// HTMLTemplateRenderer is a custom renderer for Echo
 type HTMLTemplateRenderer struct {
 	Templates *template.Template
 }
 
-// Render renders a template document
 func (t *HTMLTemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	return t.Templates.ExecuteTemplate(w, name, data)
 }

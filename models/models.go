@@ -22,9 +22,9 @@ type WatchedUrl struct {
 // URLGroup represents a collection of URLs extracted from a single source URL.
 type URLGroup struct {
 	gorm.Model
-	Name     string       `gorm:"not null"` // e.g., "Scripts from example.com"
-	SourceURL string      `gorm:"unique;not null"` // The URL used for extraction
-	URLs     []WatchedUrl `gorm:"foreignKey:GroupID"` // One-to-many relationship
+	Name      string       `gorm:"not null"`                                        // e.g., "Scripts from example.com"
+	SourceURL string       `gorm:"unique;not null"`                                 // The URL used for extraction
+	URLs      []WatchedUrl `gorm:"foreignKey:GroupID;constraint:OnDelete:CASCADE;"` // Add CASCADE constraint
 }
 
 // ChangeEvent represents a detected change for a WatchedUrl.
@@ -33,5 +33,5 @@ type ChangeEvent struct {
 	DiffText   string    `gorm:"not null"`
 	DetectedAt time.Time `gorm:"not null"`
 	URLID      uint      `gorm:"not null"`      // Foreign key to WatchedUrl
-	IsRead     bool      `gorm:"default:false"` // NEW FIELD: Tracks if the change has been "read"
+	IsRead     bool      `gorm:"default:false"` // Tracks if the change has been "read"
 }
