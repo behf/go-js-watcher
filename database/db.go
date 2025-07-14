@@ -18,12 +18,12 @@ var DB *gorm.DB // Global variable to hold the database connection
 func Init() {
 	var err error
 
-	exePath, err := os.Executable()
+	err = os.MkdirAll("./data", 0755)
 	if err != nil {
-		log.Fatalf("Failed to get executable path: %v", err)
+		log.Fatal("Could not create data directory:", err)
 	}
-	exeDir := filepath.Dir(exePath)
-	dbPath := filepath.Join(exeDir, "watcher.db")
+	// Use a relative path for the database file
+	dbPath := filepath.Join("./data", "watcher.db")
 
 	DB, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{
 		// Change LogMode to Silent to disable SQL logs

@@ -6,6 +6,7 @@ services:
     container_name: go-js-watcher-app
     ports:
       - "8090:8090"
+    working_dir: /app
     volumes:
       - watcher_data:/app/data
     env_file:
