@@ -17,6 +17,9 @@ RUN apk add --no-cache gcc musl-dev sqlite-dev
 ENV CGO_ENABLED=1
 RUN GOOS=linux go build -o main .
 
+# Install getJS CLI tool
+RUN go install github.com/003random/getJS/v2@latest
+
 # Stage 2: Create the final lean image
 FROM alpine:latest
 
@@ -31,6 +34,9 @@ COPY --from=builder /app/main .
 # Copy static assets and templates
 COPY --from=builder /app/static ./static
 COPY --from=builder /app/templates ./templates
+
+# Copy getJS binary from builder stage's $GOPATH/bin (typically /go/bin)
+COPY --from=builder /go/bin/getJS /usr/local/bin/getJS
 
 # Expose the port your application listens on
 EXPOSE 8090
