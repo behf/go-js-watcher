@@ -148,6 +148,12 @@ func main() {
 
 	authGroup.GET("/all_changes/:url_id", handlers.AllChangesGet)
 
+	authGroup.POST("/extract_js", handlers.ExtractJS)
+	authGroup.POST("/add_extracted_js", func(c echo.Context) error {
+		return handlers.AddExtractedJS(c, telegramBotToken, telegramChatID)
+	})
+	authGroup.POST("/remove_group", handlers.RemoveGroup)
+
 	// --- Start Background Scheduler ---
 	services.StartScheduler(baseURL, telegramBotToken, telegramChatID)
 

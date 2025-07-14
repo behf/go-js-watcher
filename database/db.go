@@ -36,7 +36,8 @@ func Init() {
 
 	log.Println("Database connection established.")
 
-	err = DB.AutoMigrate(&models.WatchedUrl{}, &models.ChangeEvent{})
+	err = DB.AutoMigrate(&models.WatchedUrl{}, &models.ChangeEvent{}, &models.URLGroup{})
+
 	if err != nil {
 		log.Fatalf("Failed to auto migrate database: %v", err)
 	}

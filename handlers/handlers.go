@@ -6,7 +6,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"go-js-watcher/database"
@@ -121,7 +123,12 @@ func Dashboard(c echo.Context) error {
 	var urls []models.WatchedUrl
 	result := database.DB.Preload("Changes", func(db *gorm.DB) *gorm.DB {
 		return db.Order("detected_at DESC, id DESC").Limit(5)
-	}).Find(&urls)
+	}).Where("group_id IS NULL").Find(&urls)
+
+	var urlGroups []models.URLGroup
+	result = database.DB.Preload("URLs").Preload("URLs.Changes", func(db *gorm.DB) *gorm.DB {
+		return db.Order("detected_at DESC, id DESC").Limit(5)
+	}).Find(&urlGroups)
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -168,6 +175,7 @@ func Dashboard(c echo.Context) error {
 
 	return c.Render(http.StatusOK, "dashboard.html", echo.Map{
 		"WatchedUrls":      urls,
+		"URLGroups":        urlGroups,
 		"Flashes":          GetFlashes(c),
 		"TotalURLs":        totalURLs,
 		"URLsWithUnread":   urlsWithUnreadChanges,
@@ -481,6 +489,121 @@ func AllChangesGet(c echo.Context) error {
 		"Flashes":    GetFlashes(c),
 	})
 }
+
+func ExtractJS(c echo.Context) error {
+	url := c.FormValue("url")
+	tool := c.FormValue("tool")
+
+	if url == "" {
+		Flash(c, "URL is required.")
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	var cmd *exec.Cmd
+	switch tool {
+	case "getJS":
+		cmd = exec.Command("getJS", "-url", url)
+	case "jsxtract":
+		cmd = exec.Command("jsxtract", url)
+	default:
+		Flash(c, "Invalid tool selected.")
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	output, err := cmd.Output()
+	if err != nil {
+		Flash(c, "Error executing tool: "+err.Error())
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	jsFiles := strings.Split(string(output), "\n")
+	var cleanedJSFiles []string
+	for _, file := range jsFiles {
+		if strings.TrimSpace(file) != "" {
+			cleanedJSFiles = append(cleanedJSFiles, strings.TrimSpace(file))
+		}
+	}
+
+	return c.Render(http.StatusOK, "extract_results.html", echo.Map{
+		"SourceURL": url,
+		"GroupName": "Scripts from " + url,
+		"JSFiles":   cleanedJSFiles,
+		"Flashes":   GetFlashes(c),
+	})
+}
+
+func AddExtractedJS(c echo.Context, botToken, chatID string) error {
+	sourceURL := c.FormValue("source_url")
+	groupName := c.FormValue("group_name")
+	jsFiles := c.Request().Form["js_files"]
+	intervalStr := c.FormValue("interval")
+
+	interval, err := strconv.Atoi(intervalStr)
+	if err != nil || interval <= 0 {
+		Flash(c, "Invalid interval. Must be a positive number.")
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	if len(jsFiles) == 0 {
+		Flash(c, "No JS files selected.")
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	urlGroup := models.URLGroup{
+		Name:      groupName,
+		SourceURL: sourceURL,
+	}
+	if result := database.DB.Create(&urlGroup); result.Error != nil {
+		Flash(c, "Failed to create URL group: "+result.Error.Error())
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	for _, jsFile := range jsFiles {
+		newURL := models.WatchedUrl{
+			URL:             jsFile,
+			IntervalSeconds: interval, // Default interval
+			Status:          "Scheduled for first check",
+			GroupID:         &urlGroup.ID,
+		}
+
+		if result := database.DB.Create(&newURL); result.Error != nil {
+			Flash(c, "Failed to add URL: "+result.Error.Error())
+		} else {
+			go services.CheckURLForChanges(newURL.ID, BaseURL, botToken, chatID)
+		}
+	}
+
+	Flash(c, fmt.Sprintf("Added %d JS files to be watched under the group '%s'.", len(jsFiles), groupName))
+	return c.Redirect(http.StatusFound, "/dashboard")
+}
+
+func RemoveGroup(c echo.Context) error {
+	groupIDStr := c.FormValue("group_id")
+	groupID, err := strconv.ParseUint(groupIDStr, 10, 32)
+	if err != nil {
+		Flash(c, "Invalid group ID.")
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	var group models.URLGroup
+	if result := database.DB.First(&group, groupID); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			Flash(c, "Group not found.")
+		} else {
+			Flash(c, "Database error finding group: "+result.Error.Error())
+		}
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	if result := database.DB.Unscoped().Delete(&group); result.Error != nil {
+		Flash(c, "Failed to remove group: "+result.Error.Error())
+		return c.Redirect(http.StatusFound, "/dashboard")
+	}
+
+	Flash(c, "Group '"+group.Name+"' and all its URLs have been removed.")
+	return c.Redirect(http.StatusFound, "/dashboard")
+}
+
 
 // HTMLTemplateRenderer is a custom renderer for Echo
 type HTMLTemplateRenderer struct {

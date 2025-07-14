@@ -3,37 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Changes for {{ .WatchedURL.URL }} - JS Watcher</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <title>All Changes - JS Watcher</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/style.css" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <header class="header">
-            <h1>All Changes for: {{ .WatchedURL.URL }}</h1>
-            <p><a href="/dashboard">Back to Dashboard</a></p>
-        </header>
+        <div class="header">
+            <h1><i class="fas fa-history"></i> All Changes</h1>
+            <a href="/dashboard" class="logout-btn">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
 
-        {{ if .Flashes }}
-        <ul class="flashes">
-            {{ range .Flashes }}
-            <li>{{ . }}</li>
-            {{ end }}
-        </ul>
-        {{ end }}
+        <div class="action-card">
+            <div class="url-info">
+                <strong>URL:</strong> {{ .WatchedURL.URL }}
+            </div>
 
-        <div class="all-changes-list">
             {{ if .Changes }}
-            <ul>
-                {{ range .Changes }}
-                <li class="{{ if .IsRead }}change-read{{ else }}change-unread{{ end }}">
-                    <a href="/diff/{{ .ID }}">
-                        {{ .DetectedAt.Format "2006-01-02 15:04:05" }} - Change ID: {{ .ID }}
-                    </a>
-                </li>
-                {{ end }}
-            </ul>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-calendar-check"></i> Detected At</th>
+                            <th><i class="fas fa-eye"></i> Status</th>
+                            <th><i class="fas fa-cogs"></i> Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ range .Changes }}
+                        <tr>
+                            <td>{{ .DetectedAt.Format "2006-01-02 15:04:05" }}</td>
+                            <td>
+                                {{ if .IsRead }}
+                                <span class="change-read">Read</span>
+                                {{ else }}
+                                <span class="change-unread">Unread</span>
+                                {{ end }}
+                            </td>
+                            <td>
+                                <a href="/diff/{{ .ID }}" class="btn"><i class="fas fa-search"></i> View Diff</a>
+                            </td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
             {{ else }}
-            <p>No changes recorded for this URL yet.</p>
+            <div class="empty-state">
+                <p>No changes recorded for this URL yet.</p>
+            </div>
             {{ end }}
         </div>
     </div>

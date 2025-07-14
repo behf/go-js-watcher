@@ -1,26 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - JS Watcher</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
+    </style>
 </head>
+
 <body>
-    <div class="container login-container">
-        <h1>Login</h1>
-        <form method="post">
-            <input type="text" name="username" placeholder="Username" required><br>
-            <input type="password" name="password" placeholder="Password" required><br>
-            <input type="submit" value="Login">
-        </form>
+    <div class="login-container">
+        <div class="login-header">
+            <h1><i class="fas fa-shield-alt"></i> JS Watcher Login</h1>
+        </div>
+
         {{ if .Flashes }}
-          <ul class="flashes">
+        <ul class="flashes">
             {{ range .Flashes }}
-              <li>{{ . }}</li>
+            <li><i class="fas fa-exclamation-triangle"></i> {{ . }}</li>
             {{ end }}
-          </ul>
+        </ul>
         {{ end }}
+
+        <form method="post" class="login-form">
+            <div class="form-group">
+                <label for="username"><i class="fas fa-user"></i> Username</label>
+                <input type="text" id="username" name="username" placeholder="Enter your username" required>
+            </div>
+            <div class="form-group">
+                <label for="password"><i class="fas fa-lock"></i> Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="btn"><i class="fas fa-sign-in-alt"></i> Login</button>
+        </form>
     </div>
 </body>
+
 </html>

@@ -67,16 +67,23 @@ func sendTelegramNotification(botToken, chatID, url, diffLink string, isDowntime
 
 // CheckURLForChanges now accepts botToken and chatID.
 func CheckURLForChanges(urlID uint, diffViewBaseURL, botToken, chatID string) string {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Recovered in CheckURLForChanges: %v", r)
+		}
+	}()
 	db := database.DB
 
+	log.Printf("Checking URL ID: %d", urlID)
 	var urlEntry models.WatchedUrl
 	if result := db.First(&urlEntry, urlID); result.Error != nil {
+		log.Printf("Error fetching URL ID %d: %v", urlID, result.Error)
 		if result.Error == gorm.ErrRecordNotFound {
 			return fmt.Sprintf("URL with ID %d not found.", urlID)
 		}
-		log.Printf("Error fetching URL ID %d: %v", urlID, result.Error)
 		return fmt.Sprintf("Error fetching URL ID %d: %v", urlID, result.Error)
 	}
+	log.Printf("Successfully fetched URL ID %d: %s", urlID, urlEntry.URL)
 
 	const maxRetries = 3
 	const baseBackoff = 2 * time.Second
@@ -90,6 +97,7 @@ func CheckURLForChanges(urlID uint, diffViewBaseURL, botToken, chatID string) st
 	var err error
 
 	for i := 0; i < maxRetries; i++ {
+		lastErr = err
 		req, err := http.NewRequest("GET", urlEntry.URL, nil)
 		if err != nil {
 			urlEntry.Status = fmt.Sprintf("Failed to create request: %v", err)
@@ -140,7 +148,10 @@ func CheckURLForChanges(urlID uint, diffViewBaseURL, botToken, chatID string) st
 	currentContent := string(bodyBytes)
 
 	now := time.Now().UTC()
-	urlEntry.LastChecked = &now
+
+	if urlEntry.LastChecked == nil {
+		urlEntry.LastChecked = &now
+	}
 
 	if urlEntry.LastContent == "" {
 		urlEntry.LastContent = currentContent

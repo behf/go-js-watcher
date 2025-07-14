@@ -1,38 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit URL - JS Watcher</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
+    </style>
 </head>
+
 <body>
     <div class="container">
-        <header class="header">
-            <h1>Edit URL: {{ .URL.URL }}</h1>
-            <p><a href="/dashboard">Back to Dashboard</a></p>
-        </header>
+        <div class="header">
+            <h1><i class="fas fa-edit"></i> Edit Watched URL</h1>
+            <a href="/dashboard" class="logout-btn">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
 
         {{ if .Flashes }}
         <ul class="flashes">
             {{ range .Flashes }}
-            <li>{{ . }}</li>
+            <li><i class="fas fa-info-circle"></i> {{ . }}</li>
             {{ end }}
         </ul>
         {{ end }}
 
-        <form action="/edit_url" method="post">
-            <input type="hidden" name="id" value="{{ .URL.ID }}">
-
-            <label for="url">URL:</label>
-            <input type="url" id="url" name="url" value="{{ .URL.URL }}" required size="50"><br>
-
-            <label for="interval">Check Interval (seconds):</label>
-            <input type="number" id="interval" name="interval" value="{{ .URL.IntervalSeconds }}" required><br>
-
-            <button type="submit">Update URL</button>
-            <a href="/dashboard" class="button-secondary">Cancel</a>
-        </form>
+        <div class="action-card" style="max-width: 800px; margin: auto;">
+            <form action="/edit_url" method="post">
+                <input type="hidden" name="id" value="{{ .URL.ID }}">
+                <div class="form-group">
+                    <label for="url"><i class="fas fa-link"></i> URL</label>
+                    <input type="url" id="url" name="url" value="{{ .URL.URL }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="interval"><i class="fas fa-clock"></i> Check Interval (seconds)</label>
+                    <input type="number" id="interval" name="interval" value="{{ .URL.IntervalSeconds }}" required min="30">
+                </div>
+                <div class="actions-cell">
+                    <button type="submit" class="btn"><i class="fas fa-save"></i> Update URL</button>
+                    <a href="/dashboard" class="btn btn-danger">Cancel</a>
+                </div>
+            </form>
+        </div>
     </div>
 </body>
+
 </html>

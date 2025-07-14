@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diff View</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
+    </style>
 </head>
 <body>
     <div class="container">
@@ -12,21 +14,24 @@
             <h1>Diff for {{ .WatchedURL.URL }}</h1>
             <div class="diff-navigation">
                 {{ if .PrevChangeID }}
-                <a href="/diff/{{ .PrevChangeID }}" class="nav-button">Previous Diff</a>
+                <a href="/diff/{{ .PrevChangeID }}" class="nav-button"><i class="fas fa-arrow-left"></i> Previous</a>
                 {{ else }}
-                <span class="nav-button disabled">Previous Diff</span>
+                <span class="nav-button disabled"><i class="fas fa-arrow-left"></i> Previous</span>
                 {{ end }}
 
-                <a href="/dashboard" class="nav-button">Back to Dashboard</a>
+                <a href="/dashboard" class="nav-button dashboard"><i class="fas fa-home"></i> Dashboard</a>
 
                 {{ if .NextChangeID }}
-                <a href="/diff/{{ .NextChangeID }}" class="nav-button">Next Diff</a>
+                <a href="/diff/{{ .NextChangeID }}" class="nav-button">Next <i class="fas fa-arrow-right"></i></a>
                 {{ else }}
-                <span class="nav-button disabled">Next Diff</span>
+                <span class="nav-button disabled">Next <i class="fas fa-arrow-right"></i></span>
                 {{ end }}
             </div>
         </header>
-        <p>Change detected at: {{ .ChangeEvent.DetectedAt.Format "2006-01-02 15:04:05" }}</p>
+        <div class="change-info">
+            <i class="fas fa-clock"></i>
+            Change detected at: {{ .ChangeEvent.DetectedAt.Format "2006-01-02 15:04:05" }}
+        </div>
         <div class="diff-container">
             <pre id="diff-output">{{ .DiffContent }}</pre>
         </div>

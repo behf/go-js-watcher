@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JS Watcher Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
@@ -12,19 +13,21 @@
     <div class="container">
         <div class="header">
             <h1>JS Watcher Dashboard</h1>
-            <a href="/logout">Logout</a>
+            <a href="/logout" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
         </div>
 
         {{ if .Flashes }}
         <ul class="flashes">
             {{ range .Flashes }}
-            <li>{{ . }}</li>
+            <li><i class="fas fa-info-circle"></i> {{ . }}</li>
             {{ end }}
         </ul>
         {{ end }}
 
         <section class="dashboard-summary">
-            <h2>Summary</h2>
+            <h2>Dashboard Overview</h2>
             <div class="summary-cards">
                 <div class="card">
                     <h3>Total URLs Watched</h3>
@@ -49,77 +52,260 @@
             </div>
         </section>
 
-        <h2>Add New URL to Watch</h2>
-        <form action="/add_url" method="post">
-            <input type="url" name="url" placeholder="https://example.com/script.js" required size="50">
-            <input type="number" name="interval" value="300" required>
-            <button type="submit">Add URL</button>
-        </form>
+        <div class="action-section">
+            <div class="action-card">
+                <h3><i class="fas fa-plus-circle"></i> Add New URL to Watch</h3>
+                <form action="/add_url" method="post">
+                    <div class="form-group">
+                        <label for="url">JavaScript URL</label>
+                        <input type="url" id="url" name="url" placeholder="https://example.com/script.js" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="interval">Check Interval (seconds)</label>
+                        <input type="number" id="interval" name="interval" value="300" required min="30">
+                    </div>
+                    <button type="submit" class="btn">
+                        <i class="fas fa-plus"></i> Add URL
+                    </button>
+                </form>
+            </div>
 
-        <h2>Watched URLs</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>URL</th>
-                    <th>Status</th>
-                    <th>Check Interval (s)</th>
-                    <th>Last Checked</th>
-                    <th>Recent Changes (Last 5)</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {{ if .WatchedUrls }}
-                {{ range .WatchedUrls }}
-                <tr class="{{ if not .IsActive }}url-disabled{{ end }}">
-                    <td>{{ .URL }}</td>
-                    <td>
-                        <form action="/toggle_url_active" method="post" style="display: inline-block;">
-                            <input type="hidden" name="id" value="{{ .ID }}">
-                            <label class="switch">
-                                <input type="checkbox" name="is_active" onchange="this.form.submit()" {{ if .IsActive }}checked{{ end }}>
-                                <span class="slider round"></span>
-                            </label>
-                            <span class="status-text">{{ if .IsActive }}Active{{ else }}Disabled{{ end }}</span>
-                        </form>
-                    </td>
-                    <td>{{ .IntervalSeconds }}</td>
-                    <td>{{ humanReadableTime .LastChecked }}</td>
-                    <td>
-                        <ul style="padding-left: 15px; margin: 0;">
-                            {{ if .Changes }}
-                            {{ range .Changes }}
-                            <li class="{{ if .IsRead }}change-read{{ else }}change-unread{{ end }}">
-                                <a href="/diff/{{ .ID }}">
-                                    {{ .DetectedAt.Format "2006-01-02 15:04" }}
-                                </a>
-                            </li>
-                            {{ end }}
-                            <li><a href="/all_changes/{{ .ID }}">View All Changes ({{ len .Changes }})</a></li> <!-- NEW LINK -->
-                            {{ else }}
-                            <li><i>No recent changes. Status: {{ .Status }}</i></li>
-                            <li><a href="/all_changes/{{ .ID }}">View All Changes (0)</a></li> <!-- For URLs with no changes yet -->
-                            {{ end }}
-                        </ul>
-                    </td>
-                    <td>
-                        <a href="/edit_url/{{ .ID }}" class="button-edit">Edit</a>
-                        <form action="/remove_url" method="post" style="display: inline-block; margin-left: 5px;">
-                            <input type="hidden" name="id" value="{{ .ID }}">
-                            <button type="submit">Remove</button>
-                        </form>
-                    </td>
-                </tr>
-                {{ end }}
-                {{ else }}
-                <tr>
-                    <td colspan="6" style="text-align: center;">No URLs are being watched.</td> <!-- Updated colspan -->
-                </tr>
-                {{ end }}
-            </tbody>
-        </table>
+            <div class="action-card">
+                <h3><i class="fas fa-search"></i> Extract JS Files from URL</h3>
+                <form action="/extract_js" method="post">
+                    <div class="form-group">
+                        <label for="extract-url">Target URL</label>
+                        <input type="url" id="extract-url" name="url" placeholder="https://example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tool">Extraction Tool</label>
+                        <select id="tool" name="tool">
+                            <option value="getJS">getJS</option>
+                            <option value="jsxtract">jsxtract</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn">
+                        <i class="fas fa-download"></i> Extract JS Files
+                    </button>
+                </form>
+            </div>
+        </div>
 
+        <section class="data-section">
+            <h2><i class="fas fa-list"></i> Watched URLs</h2>
+            {{ if .WatchedUrls }}
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th><i class="fas fa-link"></i> URL</th>
+                            <th><i class="fas fa-toggle-on"></i> Status</th>
+                            <th><i class="fas fa-clock"></i> Interval (s)</th>
+                            <th><i class="fas fa-calendar-check"></i> Last Checked</th>
+                            <th><i class="fas fa-history"></i> Recent Changes</th>
+                            <th><i class="fas fa-cogs"></i> Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ range .WatchedUrls }}
+                        <tr class="{{ if not .IsActive }}url-disabled{{ end }}">
+                            <td>
+                                <div style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">
+                                    {{ .URL }}
+                                </div>
+                            </td>
+                            <td>
+                                <form action="/toggle_url_active" method="post" style="display: inline-block;">
+                                    <input type="hidden" name="id" value="{{ .ID }}">
+                                    <label class="switch">
+                                        <input type="checkbox" name="is_active" onchange="this.form.submit()" {{ if .IsActive }}checked{{ end }}>
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span class="status-text">{{ if .IsActive }}Active{{ else }}Disabled{{ end }}</span>
+                                </form>
+                            </td>
+                            <td>{{ .IntervalSeconds }}</td>
+                            <td>{{ humanReadableTime .LastChecked }}</td>
+                            <td>
+                                <div style="max-width: 200px;">
+                                    {{ if .Changes }}
+                                    {{ range .Changes }}
+                                    <div class="{{ if .IsRead }}change-read{{ else }}change-unread{{ end }}">
+                                        <a href="/diff/{{ .ID }}">
+                                            {{ .DetectedAt.Format "01-02 15:04" }}
+                                        </a>
+                                    </div>
+                                    {{ end }}
+                                    <div style="margin-top: 8px;">
+                                        <a href="/all_changes/{{ .ID }}" class="btn" style="font-size: 0.8rem; padding: 6px 12px;">
+                                            View All ({{ len .Changes }})
+                                        </a>
+                                    </div>
+                                    {{ else }}
+                                    <div class="empty-state" style="padding: 10px;">
+                                        <i>No changes yet</i><br>
+                                        <small>Status: {{ .Status }}</small>
+                                    </div>
+                                    <a href="/all_changes/{{ .ID }}" class="btn" style="font-size: 0.8rem; padding: 6px 12px;">
+                                        View All (0)
+                                    </a>
+                                    {{ end }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="actions-cell">
+                                    <a href="/edit_url/{{ .ID }}" class="btn btn-edit" style="font-size: 0.8rem; padding: 8px 12px;">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    <form action="/remove_url" method="post">
+                                        <input type="hidden" name="id" value="{{ .ID }}">
+                                        <button type="submit" class="btn btn-danger" style="font-size: 0.8rem; padding: 8px 12px;">
+                                            <i class="fas fa-trash"></i> Remove
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+            {{ else }}
+            <div class="empty-state">
+                <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 15px; color: #ccc;"></i>
+                <p>No URLs are being watched yet.</p>
+                <p>Add some URLs above to start monitoring JavaScript files!</p>
+            </div>
+            {{ end }}
+        </section>
+
+        <section class="data-section">
+            <h2><i class="fas fa-layer-group"></i> URL Groups</h2>
+            {{ if .URLGroups }}
+            {{ range .URLGroups }}
+            <div class="url-group">
+                <h3 class="collapsible"><i class="fas fa-folder"></i> {{ .Name }}</h3>
+                <div class="content">
+                    <div style="padding: 15px;">
+                        <form action="/remove_group" method="post" style="margin-bottom: 20px;">
+                            <input type="hidden" name="group_id" value="{{ .ID }}">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash"></i> Delete Group
+                            </button>
+                        </form>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th><i class="fas fa-link"></i> URL</th>
+                                        <th><i class="fas fa-toggle-on"></i> Status</th>
+                                        <th><i class="fas fa-clock"></i> Interval (s)</th>
+                                        <th><i class="fas fa-calendar-check"></i> Last Checked</th>
+                                        <th><i class="fas fa-history"></i> Recent Changes</th>
+                                        <th><i class="fas fa-cogs"></i> Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {{ range .URLs }}
+                                    <tr class="{{ if not .IsActive }}url-disabled{{ end }}">
+                                        <td>
+                                            <div style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">
+                                                {{ .URL }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <form action="/toggle_url_active" method="post" style="display: inline-block;">
+                                                <input type="hidden" name="id" value="{{ .ID }}">
+                                                <label class="switch">
+                                                    <input type="checkbox" name="is_active" onchange="this.form.submit()" {{ if .IsActive }}checked{{ end }}>
+                                                    <span class="slider"></span>
+                                                </label>
+                                                <span class="status-text">{{ if .IsActive }}Active{{ else }}Disabled{{ end }}</span>
+                                            </form>
+                                        </td>
+                                        <td>{{ .IntervalSeconds }}</td>
+                                        <td>{{ humanReadableTime .LastChecked }}</td>
+                                        <td>
+                                            <div style="max-width: 200px;">
+                                                {{ if .Changes }}
+                                                {{ range .Changes }}
+                                                <div class="{{ if .IsRead }}change-read{{ else }}change-unread{{ end }}">
+                                                    <a href="/diff/{{ .ID }}">
+                                                        {{ .DetectedAt.Format "01-02 15:04" }}
+                                                    </a>
+                                                </div>
+                                                {{ end }}
+                                                <div style="margin-top: 8px;">
+                                                    <a href="/all_changes/{{ .ID }}" class="btn" style="font-size: 0.8rem; padding: 6px 12px;">
+                                                        View All ({{ len .Changes }})
+                                                    </a>
+                                                </div>
+                                                {{ else }}
+                                                <div class="empty-state" style="padding: 10px;">
+                                                    <i>No changes yet</i><br>
+                                                    <small>Status: {{ .Status }}</small>
+                                                </div>
+                                                <a href="/all_changes/{{ .ID }}" class="btn" style="font-size: 0.8rem; padding: 6px 12px;">
+                                                    View All (0)
+                                                </a>
+                                                {{ end }}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="actions-cell">
+                                                <a href="/edit_url/{{ .ID }}" class="btn btn-edit" style="font-size: 0.8rem; padding: 8px 12px;">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                                <form action="/remove_url" method="post">
+                                                    <input type="hidden" name="id" value="{{ .ID }}">
+                                                    <button type="submit" class="btn btn-danger" style="font-size: 0.8rem; padding: 8px 12px;">
+                                                        <i class="fas fa-trash"></i> Remove
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {{ end }}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{ end }}
+            {{ else }}
+            <div class="empty-state">
+                <i class="fas fa-layer-group" style="font-size: 3rem; margin-bottom: 15px; color: #ccc;"></i>
+                <p>No URL groups are being watched.</p>
+            </div>
+            {{ end }}
+        </section>
     </div>
+
+    <script>
+        var coll = document.getElementsByClassName("collapsible");
+        var i;
+
+        for (i = 0; i < coll.length; i++) {
+            coll[i].addEventListener("click", function() {
+                this.classList.toggle("active");
+                var content = this.nextElementSibling;
+                if (content.style.display === "block") {
+                    content.style.display = "none";
+                } else {
+                    content.style.display = "block";
+                }
+            });
+        }
+
+        // Auto-refresh functionality for live updates
+        setInterval(function() {
+            // Only refresh if there are active URLs being watched
+            if (document.querySelector('.url-disabled') === null) {
+                location.reload();
+            }
+        }, 30000); // Refresh every 30 seconds
+    </script>
 </body>
 
 </html>

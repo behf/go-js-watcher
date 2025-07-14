@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extracted JS Files</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/style.css" rel="stylesheet">
+
+</head>
+
+<body>
+    <div class="container">
+        <a href="/dashboard" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+
+        <div class="header">
+            <h1>JavaScript Files Extracted</h1>
+            <div class="source-url">
+                <i class="fas fa-globe"></i> {{ .SourceURL }}
+            </div>
+        </div>
+
+        {{ if .Flashes }}
+        <ul class="flashes">
+            {{ range .Flashes }}
+            <li>{{ . }}</li>
+            {{ end }}
+        </ul>
+        {{ end }}
+
+        <div class="results-section">
+            {{ if .JSFiles }}
+            <div class="stats-bar">
+                <div class="stats-item">
+                    <div class="number">{{ len .JSFiles }}</div>
+                    <div class="label">Total Files Found</div>
+                </div>
+                <div class="stats-item">
+                    <div class="number" id="selected-count">0</div>
+                    <div class="label">Selected Files</div>
+                </div>
+                <div class="stats-item">
+                    <div class="number">{{ .GroupName }}</div>
+                    <div class="label">Target Group</div>
+                </div>
+            </div>
+
+            <div class="results-header">
+                <div class="results-count">
+                    <i class="fas fa-file-code"></i> Found {{ len .JSFiles }} JavaScript files
+                </div>
+                <div class="bulk-actions">
+                    <div class="select-all-container">
+                        <input type="checkbox" id="select-all">
+                        <label for="select-all">Select All</label>
+                    </div>
+                    <span class="selected-count" id="selected-indicator" style="display: none;">
+                        0 selected
+                    </span>
+                </div>
+            </div>
+
+            <form action="/add_extracted_js" method="post" id="js-files-form">
+                <input type="hidden" name="source_url" value="{{ .SourceURL }}">
+                <input type="hidden" name="group_name" value="{{ .GroupName }}">
+                
+                <div class="js-files-grid">
+                    {{ range .JSFiles }}
+                    <div class="js-file-item" onclick="toggleFileSelection(this)">
+                        <input type="checkbox" name="js_files" value="{{ . }}" onclick="event.stopPropagation();">
+                        <div class="js-file-icon">
+                            <i class="fab fa-js-square"></i>
+                        </div>
+                        <div class="js-file-url">{{ . }}</div>
+                    </div>
+                    {{ end }}
+                </div>
+
+                <div class="action-section">
+                    <h3>Monitoring Configuration</h3>
+                    <div class="form-group">
+                        <label for="interval">
+                            <i class="fas fa-clock"></i> Check Interval (seconds)
+                        </label>
+                        <input type="number" id="interval" name="interval" value="300" required min="30" max="86400">
+                        <small style="color: #666; margin-left: 10px;">
+                            Minimum: 30 seconds, Maximum: 24 hours (86400 seconds)
+                        </small>
+                    </div>
+                    <button type="submit" class="submit-btn" id="submit-btn" disabled>
+                        <i class="fas fa-plus-circle"></i>
+                        Add Selected Files to Watchlist
+                        <span id="submit-count">(0 files)</span>
+                    </button>
+                </div>
+            </form>
+
+            {{ else }}
+            <div class="empty-state">
+                <i class="fas fa-search"></i>
+                <h3>No JavaScript Files Found</h3>
+                <p>No JavaScript files were discovered at the specified URL.<br>
+                   Try extracting from a different page or check if the URL is accessible.</p>
+            </div>
+            {{ end }}
+        </div>
+    </div>
+
+    <script>
+        let selectedCount = 0;
+        const totalFiles = {{ len .JSFiles }};
+
+        function updateSelectedCount() {
+            const selectedCountElement = document.getElementById('selected-count');
+            const selectedIndicator = document.getElementById('selected-indicator');
+            const submitBtn = document.getElementById('submit-btn');
+            const submitCount = document.getElementById('submit-count');
+            
+            selectedCountElement.textContent = selectedCount;
+            submitCount.textContent = `(${selectedCount} files)`;
+            
+            if (selectedCount > 0) {
+                selectedIndicator.style.display = 'inline-block';
+                selectedIndicator.textContent = `${selectedCount} selected`;
+                submitBtn.disabled = false;
+            } else {
+                selectedIndicator.style.display = 'none';
+                submitBtn.disabled = true;
+            }
+        }
+
+        function toggleFileSelection(element) {
+            const checkbox = element.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            
+            if (checkbox.checked) {
+                element.classList.add('selected');
+                selectedCount++;
+            } else {
+                element.classList.remove('selected');
+                selectedCount--;
+            }
+            
+            updateSelectedCount();
+            updateSelectAllState();
+        }
+
+        function updateSelectAllState() {
+            const selectAllCheckbox = document.getElementById('select-all');
+            if (selectedCount === totalFiles) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else if (selectedCount === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
+        }
+
+        document.getElementById('select-all').addEventListener('click', function(event) {
+            const checkboxes = document.querySelectorAll('input[name="js_files"]');
+            const fileItems = document.querySelectorAll('.js-file-item');
+            
+            selectedCount = 0;
+            
+            for (let i = 0; i < checkboxes.length; i++) {
+                checkboxes[i].checked = event.target.checked;
+                if (event.target.checked) {
+                    fileItems[i].classList.add('selected');
+                    selectedCount++;
+                } else {
+                    fileItems[i].classList.remove('selected');
+                }
+            }
+            
+            updateSelectedCount();
+        });
+
+        // Initialize individual checkbox listeners
+        document.querySelectorAll('input[name="js_files"]').forEach(function(checkbox) {
+            checkbox.addEventListener('change', function() {
+                const fileItem = this.closest('.js-file-item');
+                if (this.checked) {
+                    fileItem.classList.add('selected');
+                    selectedCount++;
+                } else {
+                    fileItem.classList.remove('selected');
+                    selectedCount--;
+                }
+                updateSelectedCount();
+                updateSelectAllState();
+            });
+        });
+
+        // Form submission validation
+        document.getElementById('js-files-form').addEventListener('submit', function(event) {
+            if (selectedCount === 0) {
+                event.preventDefault();
+                alert('Please select at least one JavaScript file to add to the watchlist.');
+            }
+        });
+
+        // Initialize the page
+        updateSelectedCount();
+    </script>
+</body>
+
+</html>
