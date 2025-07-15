@@ -6,7 +6,6 @@
     <title>Diff View</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
-    </style>
 </head>
 <body>
     <div class="container">
@@ -30,11 +29,29 @@
         </header>
         <div class="change-info">
             <i class="fas fa-clock"></i>
-            Change detected at: {{ .ChangeEvent.DetectedAt.Format "2006-01-02 15:04:05" }}
+            Change detected at: <span class="local-datetime" data-timestamp="{{.ChangeEvent.DetectedAt.Format "2006-01-02T15:04:05Z07:00"}}"></span>
         </div>
         <div class="diff-container">
             <pre id="diff-output">{{ .DiffContent }}</pre>
         </div>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            function formatDateTime(timestamp) {
+                if (!timestamp || timestamp === "0001-01-01T00:00:00Z") {
+                    return "";
+                }
+                const date = new Date(timestamp);
+                return date.toLocaleString();
+            }
+
+            document.querySelectorAll('.local-datetime').forEach(function(element) {
+                const timestamp = element.getAttribute('data-timestamp');
+                element.textContent = formatDateTime(timestamp);
+            });
+
+           
+        });
+    </script>
 </body>
 </html>

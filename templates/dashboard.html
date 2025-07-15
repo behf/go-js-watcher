@@ -124,14 +124,14 @@
                                 </form>
                             </td>
                             <td>{{ .IntervalSeconds }}</td>
-                            <td>{{ humanReadableTime .LastChecked }}</td>
+                            <td><span class="time-ago" data-timestamp="{{.LastChecked.Format "2006-01-02T15:04:05Z07:00"}}"></span></td>
                             <td>
                                 <div style="max-width: 200px;">
                                     {{ if .Changes }}
                                     {{ range .Changes }}
                                     <div class="{{ if .IsRead }}change-read{{ else }}change-unread{{ end }}">
                                         <a href="/diff/{{ .ID }}">
-                                            {{ .DetectedAt.Format "01-02 15:04" }}
+                                            <span class="local-datetime" data-timestamp="{{.DetectedAt.Format "2006-01-02T15:04:05Z07:00"}}"></span>
                                         </a>
                                     </div>
                                     {{ end }}
@@ -223,14 +223,14 @@
                                             </form>
                                         </td>
                                         <td>{{ .IntervalSeconds }}</td>
-                                        <td>{{ humanReadableTime .LastChecked }}</td>
+                                        <td><span class="time-ago" data-timestamp="{{.LastChecked.Format "2006-01-02T15:04:05Z07:00"}}"></span></td>
                                         <td>
                                             <div style="max-width: 200px;">
                                                 {{ if .Changes }}
                                                 {{ range .Changes }}
                                                 <div class="{{ if .IsRead }}change-read{{ else }}change-unread{{ end }}">
                                                     <a href="/diff/{{ .ID }}">
-                                                        {{ .DetectedAt.Format "01-02 15:04" }}
+                                                        <span class="local-datetime" data-timestamp="{{.DetectedAt.Format "2006-01-02T15:04:05Z07:00"}}"></span>
                                                     </a>
                                                 </div>
                                                 {{ end }}
@@ -282,6 +282,51 @@
     </div>
 
     <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            function humanReadableTime(timestamp) {
+                if (!timestamp || timestamp === "0001-01-01T00:00:00Z") {
+                    return "Never";
+                }
+                const date = new Date(timestamp);
+                const now = new Date();
+                const diff = now - date;
+
+                const seconds = Math.floor(diff / 1000);
+                const minutes = Math.floor(seconds / 60);
+                const hours = Math.floor(minutes / 60);
+                const days = Math.floor(hours / 24);
+
+                if (days > 0) {
+                    return `${days} day(s) ago`;
+                }
+                if (hours > 0) {
+                    return `${hours} hour(s) ago`;
+                }
+                if (minutes > 0) {
+                    return `${minutes} minute(s) ago`;
+                }
+                return `${seconds} second(s) ago`;
+            }
+
+            function formatDateTime(timestamp) {
+                if (!timestamp || timestamp === "0001-01-01T00:00:00Z") {
+                    return "";
+                }
+                const date = new Date(timestamp);
+                return date.toLocaleString();
+            }
+
+            document.querySelectorAll('.time-ago').forEach(function(element) {
+                const timestamp = element.getAttribute('data-timestamp');
+                element.textContent = humanReadableTime(timestamp);
+            });
+
+            document.querySelectorAll('.local-datetime').forEach(function(element) {
+                const timestamp = element.getAttribute('data-timestamp');
+                element.textContent = formatDateTime(timestamp);
+            });
+        });
+
         var coll = document.getElementsByClassName("collapsible");
         var i;
 

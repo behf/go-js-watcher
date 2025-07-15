@@ -34,7 +34,7 @@
                     <tbody>
                         {{ range .Changes }}
                         <tr>
-                            <td>{{ .DetectedAt.Format "2006-01-02 15:04:05" }}</td>
+                            <td><span class="local-datetime" data-timestamp="{{.DetectedAt.Format "2006-01-02T15:04:05Z07:00"}}"></span></td>
                             <td>
                                 {{ if .IsRead }}
                                 <span class="change-read">Read</span>
@@ -57,5 +57,21 @@
             {{ end }}
         </div>
     </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            function formatDateTime(timestamp) {
+                if (!timestamp || timestamp === "0001-01-01T00:00:00Z") {
+                    return "";
+                }
+                const date = new Date(timestamp);
+                return date.toLocaleString();
+            }
+
+            document.querySelectorAll('.local-datetime').forEach(function(element) {
+                const timestamp = element.getAttribute('data-timestamp');
+                element.textContent = formatDateTime(timestamp);
+            });
+        });
+    </script>
 </body>
 </html>

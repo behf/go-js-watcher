@@ -129,15 +129,16 @@ func Dashboard(c echo.Context) error {
 		}
 	}
 
-	for i := range urls {
-		if urls[i].LastChecked != nil {
-			localTime := urls[i].LastChecked.Local()
-			urls[i].LastChecked = &localTime
-		}
-		for j := range urls[i].Changes {
-			urls[i].Changes[j].DetectedAt = urls[i].Changes[j].DetectedAt.Local()
-		}
-	}
+	// Timezone conversion is now handled on the client-side
+	// for i := range urls {
+	// 	if urls[i].LastChecked != nil {
+	// 		localTime := urls[i].LastChecked.Local()
+	// 		urls[i].LastChecked = &localTime
+	// 	}
+	// 	for j := range urls[i].Changes {
+	// 		urls[i].Changes[j].DetectedAt = urls[i].Changes[j].DetectedAt.Local()
+	// 	}
+	// }
 
 	var totalURLs int64
 	database.DB.Model(&models.WatchedUrl{}).Count(&totalURLs)
@@ -278,7 +279,7 @@ func ViewDiff(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Database error retrieving associated URL: "+result.Error.Error())
 	}
 
-	changeEvent.DetectedAt = changeEvent.DetectedAt.Local()
+	// changeEvent.DetectedAt = changeEvent.DetectedAt.Local()
 
 	var prevChangeID, nextChangeID uint
 
@@ -449,9 +450,9 @@ func AllChangesGet(c echo.Context) error {
 		return c.Redirect(http.StatusFound, "/dashboard")
 	}
 
-	for i := range changes {
-		changes[i].DetectedAt = changes[i].DetectedAt.Local()
-	}
+	// for i := range changes {
+	// 	changes[i].DetectedAt = changes[i].DetectedAt.Local()
+	// }
 
 	return c.Render(http.StatusOK, "all_changes.html", echo.Map{
 		"WatchedURL": watchedURL,
