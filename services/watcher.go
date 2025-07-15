@@ -12,7 +12,6 @@ import (
 	"go-js-watcher/database" // Import your database package
 	"go-js-watcher/models"   // Import your models package
 
-	// Telegram Bot API
 	"github.com/sergi/go-diff/diffmatchpatch" // Character-level diffing
 	"gorm.io/gorm"
 
@@ -21,7 +20,6 @@ import (
 )
 
 // sendTelegramNotification sends a simple notification to Telegram.
-// Now accepts botToken and chatID as arguments.
 func sendTelegramNotification(botToken, chatID, url, diffLink string, isDowntimeAlert bool) {
 	if botToken == "" || chatID == "" {
 		log.Println("Telegram credentials not provided to notification function. Skipping notification.")
@@ -65,7 +63,6 @@ func sendTelegramNotification(botToken, chatID, url, diffLink string, isDowntime
 	}
 }
 
-// CheckURLForChanges now accepts botToken and chatID.
 func CheckURLForChanges(urlID uint, diffViewBaseURL, botToken, chatID string) string {
 	defer func() {
 		if r := recover(); r != nil {
@@ -148,10 +145,7 @@ func CheckURLForChanges(urlID uint, diffViewBaseURL, botToken, chatID string) st
 	currentContent := string(bodyBytes)
 
 	now := time.Now().UTC()
-
-	if urlEntry.LastChecked == nil {
-		urlEntry.LastChecked = &now
-	}
+	urlEntry.LastChecked = &now // Always update LastChecked
 
 	if urlEntry.LastContent == "" {
 		urlEntry.LastContent = currentContent
@@ -184,7 +178,7 @@ func CheckURLForChanges(urlID uint, diffViewBaseURL, botToken, chatID string) st
 		if diffViewBaseURL != "" {
 			diffLink = fmt.Sprintf("%s/diff/%d", diffViewBaseURL, newChange.ID)
 		}
-		sendTelegramNotification(botToken, chatID, urlEntry.URL, diffLink, false) // Pass credentials here
+		sendTelegramNotification(botToken, chatID, urlEntry.URL, diffLink, false)
 
 		urlEntry.LastContent = currentContent
 		urlEntry.Status = fmt.Sprintf("Change detected at %s", now.Format("2006-01-02 15:04 UTC"))
