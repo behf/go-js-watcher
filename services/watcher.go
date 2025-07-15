@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"go-js-watcher/database" // Import your database package
@@ -160,6 +161,7 @@ func CheckURLForChanges(urlID uint, diffViewBaseURL, botToken, chatID string) st
 		diffs := dmp.DiffMain(urlEntry.LastContent, currentContent, true)
 		dmp.DiffCleanupSemantic(diffs)
 		htmlDiff := dmp.DiffPrettyHtml(diffs)
+		htmlDiff = strings.ReplaceAll(htmlDiff, "&para;<br>", "<br>")
 
 		newChange := models.ChangeEvent{
 			URLID:      urlEntry.ID,
