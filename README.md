@@ -80,7 +80,14 @@ The application is configured entirely via environment variables. You **DO NOT**
 You have two main options:
 
 #### Option A: Run Natively (Requires Go Installation)
+**Prerequisite:**  
+You must install the `getJS` tool, which is used internally for JavaScript scraping. Run:
 
+```bash
+go install github.com/003random/getJS/v2@latest
+```
+
+This will place the `getJS` binary in your `$GOPATH/bin` (usually `~/go/bin`). Make sure this directory is in your system's `PATH`.
 This method runs the application directly on your host machine.
 
 1.  **Download Dependencies:**
@@ -93,7 +100,8 @@ This method runs the application directly on your host machine.
     This compiles your Go code into a single executable file.
     ```bash
     go build -o go-js-watcher
-    ```    This creates an executable file named `go-js-watcher` (or `go-js-watcher.exe` on Windows) in your current directory.
+    ```
+    This creates an executable file named `go-js-watcher` (or `go-js-watcher.exe` on Windows) in your current directory.
 
 3.  **Run the Application:**
     *   If you built it:
@@ -105,7 +113,7 @@ This method runs the application directly on your host machine.
         go run .
         ```
 
-    The database file (`watcher.db`) will be created in the same directory as the executable.
+    The database file (`watcher.db`) will be created in the `data` folder.
 
 #### Option B: Run with Docker (Recommended)
 
