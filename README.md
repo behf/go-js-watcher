@@ -4,6 +4,11 @@ Go JS Watcher is a powerful and lightweight tool designed to monitor JavaScript 
 
 This tool is built with Go, leveraging its efficient concurrency features for background checking, eliminating the need for complex external task queues.
 
+## Screenshots
+
+![Main Dashboard](assets/screenshots/dashboard.png)
+![Diff View](assets/screenshots/diff.png)
+![All Changes](assets/screenshots/extraction.png)
 ## Features
 
 *   **URL Monitoring:** Watch any public URL for content changes.
