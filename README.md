@@ -13,6 +13,7 @@ This tool is built with Go, leveraging its efficient concurrency features for ba
 
 *   **URL Monitoring:** Watch any public URL for content changes.
 *   **Configurable Intervals:** Set how frequently each URL is checked.
+*   **Automatic Extraction:** Extract javascript files from a page using third party tools.
 *   **Character-Level Diffing:** Precise highlighting of added and removed characters/words.
 *   **Change History:** View a list of all detected changes for each URL.
 *   **"Read" / "Unread" Status:** Easily differentiate between changes you've reviewed and new ones.
